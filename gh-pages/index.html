@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <title>Game</title>
+    <meta charset="utf-8" />
+    <script src="./bundle.js"></script>
+    <style>
+        html {overflow: hidden;height: 100%;}
+        body {height: 100%;overflow: auto;}
+    </style>
+</head>
+
+<body>
+
+<script>
+    var redirect = sessionStorage.redirect;
+    delete sessionStorage.redirect;
+    if (redirect && redirect !== location.href) {
+        history.replaceState(null, null, redirect);
+    }
+
+    document.addEventListener("dragover", function (event) {
+        event.preventDefault();
+    }, false);
+    document.addEventListener("drop", function (event) {
+        event.preventDefault();
+    }, false);
+
+    document.body.addEventListener("dragstart", event => {
+        if (event.target && event.target.draggable) {
+            // absurdly, this is needed for Firefox; see https://medium.com/elm-shorts/elm-drag-and-drop-game-630205556d2
+            event.dataTransfer.setData("text/html", "blank");
+        }
+    });
+
+    document.body.addEventListener("dragover", event => {
+        // this is needed in order to make dragging work
+        return false;
+    });
+
+    setTimeout(() => Object.values(Elm)[0].init({ node: document.querySelector("div") }), 0)
+
+
+</script>
+<div></div>
+</body>
+
+</html>
