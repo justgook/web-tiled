@@ -1,0 +1,3 @@
+[submodule "gh-pages/top-down-adventure"]
+	path = gh-pages/top-down-adventure
+	url = git@github.com:z0lv/-age-top-down-adventure.git

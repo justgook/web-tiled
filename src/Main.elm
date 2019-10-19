@@ -110,7 +110,7 @@ init _ =
 
         --                |> IDE.UI.Tree.addNorth topToolbar
         url =
-            "TopDown/demo.json"
+            "top-down-adventure/demo.json"
 
         relUrl =
             String.split "/" url
