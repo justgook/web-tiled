@@ -1,4 +1,4 @@
-module WebTiled.UI.Tree exposing
+module IDE.UI.Tree exposing
     ( Height
     , Node(..)
     , Path
@@ -18,9 +18,9 @@ module WebTiled.UI.Tree exposing
     , verticalToPlain
     )
 
-import WebTiled.Internal.Many as Many exposing (Many)
-import WebTiled.Internal.ManyAndNotempty exposing (toMany, toNonempty)
-import WebTiled.Internal.Notempty as Notempty
+import IDE.Internal.Many as Many exposing (Many)
+import IDE.Internal.ManyAndNotempty exposing (toMany, toNonempty)
+import IDE.Internal.Notempty as Notempty
 
 
 type alias Width =

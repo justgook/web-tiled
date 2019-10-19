@@ -1,4 +1,4 @@
-module WebTiled.Internal.Many exposing
+module IDE.Internal.Many exposing
     ( Many
     , init
     , first, second, head, tail, toList, get

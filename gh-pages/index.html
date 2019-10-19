@@ -10,15 +10,13 @@
     <link rel="stylesheet" href="css/flaticon.css">
     <style>
 
-
-
         .vResize, .hResize {
             position: relative;
             z-index: 1;
         }
 
         .vResize::after, .hResize::after {
-            background: rgba(0, 100, 0, 0.4);
+            /*background: rgba(0, 100, 0, 0.4);*/
             position: absolute;
             content: "";
         }
@@ -35,6 +33,14 @@
             right: -5px;
             bottom: 0;
             left: -5px;
+        }
+        canvas, img, image {
+            image-rendering: optimizeSpeed; /* Older versions of FF */
+            image-rendering: -moz-crisp-edges; /* FF 6.0+ */
+            image-rendering: -webkit-optimize-contrast; /* Safari */
+            image-rendering: -o-crisp-edges; /* OS X & Windows Opera (12.02+) */
+            image-rendering: pixelated; /* Awesome future-browsers*/
+            -ms-interpolation-mode: nearest-neighbor; /* IE */
         }
     </style>
 </head>

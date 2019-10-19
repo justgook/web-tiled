@@ -1,32 +1,30 @@
-module WebTiled.UI.Html exposing (Message(..), Model, ResizeInfo, update, view)
+module IDE.UI.Html exposing (Message(..), Model, ResizeInfo, update, view)
 
 import Html exposing (Attribute, Html, button, div, text)
-import Html.Attributes as Html exposing (class, style)
+import Html.Attributes exposing (class, style)
 import Html.Events
+import IDE.UI.Render exposing (Config)
+import IDE.UI.Tree exposing (Height, Node, Path, Width)
 import Json.Decode as Decode
-import WebTiled.UI.Render exposing (Config)
-import WebTiled.UI.Tree exposing (Height, Node, Path, Width)
 
 
 type alias Model panel =
-    { node : WebTiled.UI.Tree.Node panel
+    { node : IDE.UI.Tree.Node panel
     , resizeInfo : Maybe ResizeInfo
     }
 
 
-type Message
+type Message msg
     = ResizeStart ResizeInfo
     | ResizeStop ResizeInfo
     | Resizing ResizeInfo
     | SetTab Path
+    | Panel msg
 
 
 type alias ResizeInfo =
     { path : ( Path, Path )
-    , start :
-        { x : Int
-        , y : Int
-        }
+    , start : { x : Int, y : Int }
     , diffX : Int
     , diffY : Int
     , axis : Axis
@@ -38,7 +36,7 @@ type Axis
     | Horizontal
 
 
-update : Message -> Model panel -> Model panel
+update : Message msg -> Model panel -> Model panel
 update msg model =
     case msg of
         ResizeStart info ->
@@ -56,16 +54,16 @@ update msg model =
                 Horizontal ->
                     { model
                         | node =
-                            WebTiled.UI.Tree.mapSizeAt p1 ((+) diffX) identity model.node
-                                |> WebTiled.UI.Tree.mapSizeAt p2 (\a -> a - diffX) identity
+                            IDE.UI.Tree.mapSizeAt p1 ((+) diffX) identity model.node
+                                |> IDE.UI.Tree.mapSizeAt p2 (\a -> a - diffX) identity
                         , resizeInfo = Just info
                     }
 
                 Vertical ->
                     { model
                         | node =
-                            WebTiled.UI.Tree.mapSizeAt p1 identity ((+) diffY) model.node
-                                |> WebTiled.UI.Tree.mapSizeAt p2 identity (\a -> a - diffY)
+                            IDE.UI.Tree.mapSizeAt p1 identity ((+) diffY) model.node
+                                |> IDE.UI.Tree.mapSizeAt p2 identity (\a -> a - diffY)
                         , resizeInfo = Just info
                     }
 
@@ -78,8 +76,11 @@ update msg model =
         SetTab _ ->
             Debug.todo "SetTab"
 
+        Panel _ ->
+            Debug.todo "Panel"
 
-view : (Width -> Height -> panel -> Html Message) -> Model panel -> Html Message
+
+view : (Width -> Height -> panel -> Html msg) -> Model panel -> Html (Message msg)
 view drawPanel { node, resizeInfo } =
     let
         newConfig =
@@ -88,22 +89,19 @@ view drawPanel { node, resizeInfo } =
         attrs =
             dragMove resizeInfo [ style "width" "100%", style "height" "100%" ]
     in
-    [ WebTiled.UI.Render.view [] newConfig node ]
+    [ IDE.UI.Render.view [] newConfig node ]
         |> div attrs
 
 
-config :
-    (Int -> Int -> panel -> Html Message)
-    -> Config panel String (Html Message)
 config panel =
     let
         tabs =
             List.map
                 (\( path, title ) ->
                     button
-                        [ Html.style "background" "rgb(51,51,51)"
-                        , Html.style "padding" "4px"
-                        , Html.style "margin" "2px"
+                        [ style "background" "rgb(51,51,51)"
+                        , style "padding" "4px"
+                        , style "margin" "2px"
                         ]
                         [ text title
                         ]
@@ -117,11 +115,11 @@ config panel =
         setHeight w =
             String.fromInt w ++ "px" |> style "height"
 
-        vertical : Width -> List (Html Message) -> Html Message
+        --        vertical : Width -> List (Html Message) -> Html Message
         vertical w =
             div [ setWidth w ]
 
-        horizontal : Height -> List (Html Message) -> Html Message
+        --        horizontal : Height -> List (Html Message) -> Html Message
         horizontal h =
             div
                 [ setHeight h
@@ -151,11 +149,13 @@ config panel =
     , tabsEast = tabsEast
     , tabsSouth = tabsSouth
     , tabsWest = tabsWest
-    , panel = panel
+    , panel =
+        \w h d ->
+            panel w h d |> Html.map Panel
     }
 
 
-vResize : Path -> Path -> Html Message
+vResize : Path -> Path -> Html (Message msg)
 vResize path1 path2 =
     div
         [ style "background" "#ddd"
@@ -166,7 +166,7 @@ vResize path1 path2 =
         []
 
 
-hResize : Path -> Path -> Html Message
+hResize : Path -> Path -> Html (Message msg)
 hResize path1 path2 =
     div
         [ style "background" "#ddd"
@@ -177,7 +177,7 @@ hResize path1 path2 =
         []
 
 
-dragStart : Axis -> Path -> Path -> Attribute Message
+dragStart : Axis -> Path -> Path -> Attribute (Message msg)
 dragStart axis path1 path2 =
     let
         decoder =
@@ -204,7 +204,7 @@ dragStart axis path1 path2 =
     Html.Events.custom "mousedown" decoder
 
 
-dragMove : Maybe ResizeInfo -> List (Attribute Message) -> List (Attribute Message)
+dragMove : Maybe ResizeInfo -> List (Attribute (Message msg)) -> List (Attribute (Message msg))
 dragMove resizing =
     case resizing of
         Just info ->
@@ -237,7 +237,7 @@ dragMove resizing =
             identity
 
 
-dragStop : ResizeInfo -> Html.Attribute Message
+dragStop : ResizeInfo -> Attribute (Message msg)
 dragStop info =
     { message = ResizeStop info
     , stopPropagation = True

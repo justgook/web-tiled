@@ -1,7 +1,7 @@
-module WebTiled.Internal.ManyAndNotempty exposing (toMany, toNonempty)
+module IDE.Internal.ManyAndNotempty exposing (toMany, toNonempty)
 
-import WebTiled.Internal.Many as Many exposing (Many)
-import WebTiled.Internal.Notempty as Nonempty exposing (Nonempty)
+import IDE.Internal.Many as Many exposing (Many)
+import IDE.Internal.Notempty as Nonempty exposing (Nonempty)
 
 
 toNonempty : Many a -> Nonempty a

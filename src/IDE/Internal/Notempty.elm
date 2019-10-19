@@ -1,4 +1,4 @@
-module WebTiled.Internal.Notempty exposing
+module IDE.Internal.Notempty exposing
     ( Nonempty
     , init
     , head, tail, toList, get

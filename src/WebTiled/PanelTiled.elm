@@ -1,21 +1,21 @@
-module WebTiled.PanelTiled exposing (Model(..), view)
+module WebTiled.PanelTiled exposing (Kind(..), Model, init, view)
 
 import Dict
 import Html exposing (Attribute, Html, a, button, div, h1, header, input, nav, span, table, tbody, td, text, th, thead, tr)
-import Html.Attributes as Html exposing (class, colspan, style, type_)
+import Html.Attributes exposing (class, colspan, style, type_)
 import Html.Lazy
+import IDE.Internal.List as List
+import IDE.UI.Tree exposing (Height, Width)
 import Tiled.Layer as Layer
 import Tiled.Level as Tiled
 import Tiled.Properties exposing (Properties, Property(..))
 import Tiled.Tileset as Tileset
 import Tiled.Util
-import WebTiled.Internal.List as List
 import WebTiled.PanelTiled.Render as RenderPanel
 import WebTiled.PanelTiled.Tileset as TilesetPanel
-import WebTiled.UI.Tree exposing (Height, Width)
 
 
-type Model
+type Kind
     = MainTools
     | LayerTools
     | ObjectTools
@@ -26,12 +26,21 @@ type Model
     | Render
 
 
-view : String -> Tiled.Level -> Width -> Height -> Model -> Html msg
-view relUrl level w_ h_ m =
-    let
-        tilesetActiveTab =
-            0
-    in
+type alias Model =
+    { render : RenderPanel.Model
+    , tilesets : TilesetPanel.Model
+    }
+
+
+init : Model
+init =
+    { render = RenderPanel.init
+    , tilesets = TilesetPanel.init
+    }
+
+
+view : Model -> String -> Tiled.Level -> Width -> Height -> Kind -> Html (Model -> Model)
+view editor relUrl level w_ h_ m =
     case m of
         MainTools ->
             bare w_ h_ [ mainToolbar ]
@@ -52,10 +61,18 @@ view relUrl level w_ h_ m =
             bare w_ h_ (layers (Tiled.Util.levelData level).layers)
 
         Tilesets ->
-            tilesets tilesetActiveTab relUrl (Tiled.Util.levelData level).tilesets |> panel w_ h_ "Tilesets"
+            [ TilesetPanel.view editor.tilesets relUrl (Tiled.Util.levelData level).tilesets
+                |> Html.map (\fn model -> { model | tilesets = fn model.tilesets })
+            ]
+                |> panel w_ h_ "Tilesets"
 
         Render ->
-            panel w_ h_ "Render" [ RenderPanel.view level ]
+            panel w_
+                h_
+                "Render"
+                [ RenderPanel.view editor.render level
+                    |> Html.map (\fn model -> { model | render = fn model.render })
+                ]
 
 
 panel w_ h_ title content =
@@ -93,87 +110,6 @@ bare w_ h_ =
         , style "flex-flow" "column"
         , style "position" "relative"
         ]
-
-
-tilesets : Int -> String -> List Tileset.Tileset -> List (Html msg)
-tilesets activeTab relUrl t =
-    [ Html.Lazy.lazy2 tilesetsTabsWrap activeTab t
-    , div
-        [ style "background-color" "#BFBFBF"
-        , style "flex" "1"
-        , style "position" "relative"
-        ]
-        [ Html.Lazy.lazy3 tilesetsContentWrap relUrl t activeTab ]
-    ]
-
-
-tilesetsTabsWrap : Int -> List Tileset.Tileset -> Html msg
-tilesetsTabsWrap activeTab t =
-    let
-        pluss =
-            div [ class "tab-item tab-item-fixed" ]
-                [ span [ class "icon icon-plus" ]
-                    []
-                ]
-    in
-    List.indexedFoldl
-        (\i tileset acc ->
-            let
-                tabAttrs =
-                    if i == activeTab then
-                        class "tab-item active"
-
-                    else
-                        class "tab-item"
-            in
-            case tileset of
-                Tileset.Source sourceTileData ->
-                    div [ tabAttrs ]
-                        [ span [ class "icon icon-cancel icon-close-tab" ] []
-                        , text "Source"
-                        ]
-                        :: acc
-
-                Tileset.Embedded embeddedTileData ->
-                    div
-                        [ tabAttrs
-                        , style "text-overflow" "ellipsis"
-                        , style "white-space" "nowrap"
-                        , style "overflow" "hidden"
-                        ]
-                        [ span [ class "icon icon-cancel icon-close-tab" ] []
-                        , text embeddedTileData.name
-                        ]
-                        :: acc
-
-                Tileset.ImageCollection imageCollectionTileData ->
-                    div [ tabAttrs ]
-                        [ span [ class "icon icon-cancel icon-close-tab" ] []
-                        , text imageCollectionTileData.name
-                        ]
-                        :: acc
-        )
-        []
-        t
-        |> (\a -> a ++ [ pluss ])
-        |> div
-            [ class "tab-group"
-            , style "overflow-x" "scroll"
-            , style "max-width" "100%"
-            ]
-
-
-tilesetsContentWrap : String -> List Tileset.Tileset -> Int -> Html msg
-tilesetsContentWrap relUrl_ t_ activeTab_ =
-    div
-        [ style "position" "absolute"
-        , style "top" "0"
-        , style "right" "0"
-        , style "bottom" "0"
-        , style "left" "0"
-        , style "overflow" "scroll"
-        ]
-        (TilesetPanel.view relUrl_ t_ activeTab_)
 
 
 levelProperties : Tiled.Level -> List (Html msg)
@@ -344,7 +280,7 @@ propToWidget prop =
                     else
                         value
             in
-            input [ type_ "color", Html.value color ] []
+            input [ type_ "color", Html.Attributes.value color ] []
 
         PropInt value ->
             text <| String.fromInt value
@@ -353,7 +289,7 @@ propToWidget prop =
             text <| fromFloat value
 
         PropBool value ->
-            input [ type_ "checkbox", Html.checked value ] []
+            input [ type_ "checkbox", Html.Attributes.checked value ] []
 
         _ ->
             text "propertyRow"

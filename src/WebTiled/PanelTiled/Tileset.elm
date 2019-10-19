@@ -1,129 +1,144 @@
-module WebTiled.PanelTiled.Tileset exposing (view)
+module WebTiled.PanelTiled.Tileset exposing (Model, init, view)
 
-import Html exposing (Html)
+import Html exposing (Html, div, span, text)
+import Html.Attributes exposing (class, style)
+import Html.Events
+import Html.Lazy
+import IDE.Internal.List as List
+import IDE.UI.Transform.DragScale as DragScale exposing (DragScale)
+import Json.Decode as D
 import Tiled.Tileset as Tileset
-import TypedSvg exposing (..)
-import TypedSvg.Attributes exposing (viewBox, xlinkHref)
-import TypedSvg.Attributes.InPx exposing (..)
-import TypedSvg.Core exposing (Svg, attribute)
-import WebTiled.Internal.List as List
+import TypedSvg.Events
+import VirtualDom exposing (Handler(..))
+import WebTiled.Svg.Tileset
 
 
-view : String -> List Tileset.Tileset -> Int -> List (Html msg)
-view relUrl t activeTab =
+type alias Model =
+    DragScale
+        { active : Int
+        }
+
+
+init : Model
+init =
+    { scale = 1
+    , drag =
+        { x = 0
+        , y = 0
+        }
+    , active = 1
+    }
+
+
+handlerWheel =
+    MayPreventDefault (D.map (\fn -> ( \m -> fn m |> limit, True )) DragScale.wheel)
+
+
+view : Model -> String -> List Tileset.Tileset -> Html (Model -> Model)
+view m relUrl t =
+    div
+        [ style "height" "100%"
+        ]
+        [ Html.Lazy.lazy2 tilesetsTabsWrap m.active t
+        , div
+            [ style "overflow" "hidden"
+            , style "height" "100%"
+            , TypedSvg.Events.on "wheel" handlerWheel
+            ]
+            [ div
+                [ DragScale.apply m
+                , style "transform-origin" "0 0"
+                ]
+                [ Html.Lazy.lazy3 tilesetsContentWrap relUrl t m.active ]
+            ]
+        ]
+
+
+view_ relUrl_ t_ activeTab_ =
+    WebTiled.Svg.Tileset.view relUrl_ t_ activeTab_
+
+
+tilesetsContentWrap relUrl_ t_ active =
+    div [] (view_ relUrl_ t_ active)
+
+
+tilesetsTabsWrap : Int -> List Tileset.Tileset -> Html (Model -> Model)
+tilesetsTabsWrap activeTab t =
     let
-        spacing =
-            3
+        pluss =
+            div [ class "tab-item tab-item-fixed" ]
+                [ span [ class "icon icon-plus" ] []
+                ]
     in
     List.indexedFoldl
         (\i tileset acc ->
+            let
+                tabAttrs =
+                    if i == activeTab then
+                        class "tab-item active"
+
+                    else
+                        class "tab-item"
+            in
             case tileset of
                 Tileset.Source sourceTileData ->
-                    acc
+                    div [ tabAttrs ]
+                        [ span [ class "icon icon-cancel icon-close-tab" ] []
+                        , text "Source"
+                        ]
+                        :: acc
 
-                Tileset.Embedded info ->
-                    let
-                        rows =
-                            info.tilecount // info.columns
-
-                        w =
-                            toFloat (info.columns * info.tilewidth)
-                                |> (+) (toFloat info.columns * spacing)
-
-                        h =
-                            toFloat (rows * info.tileheight)
-                                |> (+) (toFloat rows * spacing)
-
-                        imageId =
-                            "tileset-image[" ++ String.fromInt i ++ "]"
-
-                        lattr =
-                            if activeTab /= i then
-                                [ TypedSvg.Attributes.style "display:block;width:0;height:0;" ]
-
-                            else
-                                []
-                    in
-                    svg
-                        ([ width w
-                         , height h
-                         , viewBox 0 0 w h
-                         ]
-                            ++ lattr
-                        )
-                        (defs []
-                            [ image
-                                [ xlinkHref <| relUrl ++ info.image
-                                , width <| toFloat info.imagewidth
-                                , height <| toFloat info.imageheight
-                                , id imageId
-                                ]
-                                []
-                            ]
-                            :: tiles spacing imageId info
-                        )
+                Tileset.Embedded embeddedTileData ->
+                    div
+                        [ tabAttrs
+                        , style "text-overflow" "ellipsis"
+                        , style "white-space" "nowrap"
+                        , style "overflow" "hidden"
+                        , Html.Events.onClick (activate i)
+                        ]
+                        [ span [ class "icon icon-cancel icon-close-tab" ] []
+                        , text embeddedTileData.name
+                        ]
                         :: acc
 
                 Tileset.ImageCollection imageCollectionTileData ->
-                    acc
+                    div [ tabAttrs ]
+                        [ span [ class "icon icon-cancel icon-close-tab" ] []
+                        , text imageCollectionTileData.name
+                        ]
+                        :: acc
         )
         []
         t
+        |> (\a -> a ++ [ pluss ])
+        |> div
+            [ class "tab-group"
+            , style "overflow-x" "scroll"
+            , style "max-width" "100%"
+            ]
 
 
-tiles =
-    tiles_ ( 0, [] )
+limit m =
+    { m
+        | drag = { x = min m.drag.x 0, y = min m.drag.y 0 }
+    }
 
 
-tiles_ ( i, acc ) spacing imageId info =
-    let
-        tileGid =
-            String.fromInt (i + info.firstgid)
+getActiveSize i b =
+    { w = 100, h = 100 }
 
-        w =
-            toFloat info.tilewidth
 
-        h =
-            toFloat info.tileheight
+activate i m =
+    { init | active = i }
 
-        column =
-            toFloat (remainderBy info.columns i)
 
-        row =
-            toFloat (i // info.columns)
-
-        x_ =
-            w * column
-
-        y_ =
-            h * row
-    in
-    if i < info.tilecount then
-        tiles_
-            ( i + 1
-            , symbol
-                [ id tileGid
-                , viewBox x_ y_ w h
-                , width w
-                , height h
-                ]
-                [ use [ xlinkHref <| "#" ++ imageId ] []
-                ]
-                :: use
-                    [ xlinkHref <| "#" ++ tileGid
-                    , x (x_ + spacing * column)
-                    , y (y_ + spacing * row)
-                    ]
-                    []
-                :: acc
-            )
-            spacing
-            imageId
-            info
+{-| Returns `Just` the element at the given index in the list,
+or `Nothing` if the index is out of range.
+-}
+getAt : Int -> List a -> Maybe a
+getAt idx xs =
+    if idx < 0 then
+        Nothing
 
     else
-        acc
-
-
-id =
-    attribute "id"
+        List.head <| List.drop idx xs

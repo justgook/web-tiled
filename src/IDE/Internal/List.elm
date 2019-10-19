@@ -1,4 +1,4 @@
-module WebTiled.Internal.List exposing (indexedFoldl)
+module IDE.Internal.List exposing (indexedFoldl)
 
 {-| Variant of `foldl` that passes the index of the current element to the step function. `indexedFoldl` is to `List.foldl` as `List.indexedMap` is to `List.map`.
 -}

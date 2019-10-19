@@ -1,7 +1,7 @@
-module WebTiled.UI.Render exposing (Config, view)
+module IDE.UI.Render exposing (Config, view)
 
-import WebTiled.Internal.Many as Many
-import WebTiled.UI.Tree exposing (Height, Node(..), Path, Width, horizontalToPlain, mapHorizontalWidth, mapVerticalHeight, verticalToPlain)
+import IDE.Internal.Many as Many
+import IDE.UI.Tree exposing (Height, Node(..), Path, Width, horizontalToPlain, mapHorizontalWidth, mapVerticalHeight, verticalToPlain)
 
 
 type alias Config panel tabInfo html =
