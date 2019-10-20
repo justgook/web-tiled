@@ -15,9 +15,7 @@ cache:
     - elm_cache_osx
 
 env:
-  - GAME_SOUNDS=""
-  - NODE_ENV=production
-  - GAME=Tiled GAME_URL="https://tiled.z0.lv/" GAME_FILE="top-down-adventure/demo.json" GAME_FAVICON="top-down-adventure/favicon.png"
+  - GAME_SOUNDS="" NODE_ENV=production GAME=Tiled GAME_URL="https://tiled.z0.lv/" GAME_FILE="top-down-adventure/demo.json" GAME_FAVICON="top-down-adventure/favicon.png"
 
 #os:
 #  - linux
