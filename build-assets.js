@@ -8,11 +8,9 @@ const server = http.createServer((req, res) => {
     if (req.url === "/") {
         req.url = `/index.html`;
     } else if (/bundle\.js$/.test(req.url)) {
-        req.url = `/dist/${process.env.GAME}_bundle.js`;
+        req.url = `/${process.env.GAME}_bundle.js`;
     } else if (req.url === `/${process.env.GAME}.age.bin` || req.url === "/default.age.bin") {
-        req.url = `/dist/${process.env.GAME}.age.bin`;
-    } else if (fs.existsSync(__dirname + "/gh-pages/dist" + req.url)) {
-        req.url = "/dist" + req.url;
+        req.url = `/${process.env.GAME}.age.bin`;
     }
 
     const path = __dirname + "/gh-pages" + req.url;
@@ -39,7 +37,7 @@ server.listen(port, ()=> {
 
 function screenshot(done) {
     const url = `http://localhost:${port}/`;
-    const savePreview = `gh-pages/dist/${process.env.GAME}.png`;
+    const savePreview = `gh-pages/${process.env.GAME}.png`;
     console.log("aa");
     const preview = new Promise((resolve, reject) =>
 
