@@ -38,7 +38,7 @@ main =
         { init = init
         , view =
             \model ->
-                { title = "Application Title"
+                { title = "WebTiled Editor"
                 , body = [ view model ]
                 }
         , update = update
@@ -101,7 +101,7 @@ init _ =
                 |> IDE.UI.Tree.addSouth (IDE.UI.Tree.node Tilesets)
 
         center =
-            IDE.UI.Tree.node Render
+            IDE.UI.Tree.nodeWith 200 20 Render
 
         newNode =
             leftSide

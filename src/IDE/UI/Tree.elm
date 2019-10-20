@@ -84,7 +84,7 @@ defaultLimit =
 
 node : a -> Node a
 node panel =
-    SingleChild defaultLimit 10 10 panel
+    SingleChild defaultLimit 2 2 panel
 
 
 nodeWith : Width -> Height -> a -> Node a
