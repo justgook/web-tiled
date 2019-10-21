@@ -5,9 +5,9 @@ node_js: '12'
 sudo: required
 dist: trusty
 
-elm: latest
-elm-test: latest
-elm-format: latest
+elm: 0.19.1
+elm-test: 0.19.1
+elm-format: 0.8.2
 
 cache:
   yarn: true
