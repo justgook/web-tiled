@@ -1,14 +1,13 @@
 language: elm
-elm:
-  - elm0.19.1
 
 node_js: '12'
 
 sudo: required
 dist: trusty
 
-elm-test: elm0.19.1
-elm-format: 0.8.2
+elm: latest
+elm-test: latest
+elm-format: latest
 
 cache:
   yarn: true
