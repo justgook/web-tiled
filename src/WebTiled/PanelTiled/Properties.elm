@@ -65,21 +65,23 @@ propToWidget prop =
             input [ type_ "color", Html.Attributes.value color ] []
 
         PropInt value ->
-            let
-                m =
-                    { value = toFloat value, string = String.fromInt value, focus = True }
-
-                _ =
-                    Debug.log "PropInt" value
-            in
-            Widget.float m
+            --            let
+            --                m =
+            --                    { value = toFloat value, string = String.fromInt value }
+            --
+            --                _ =
+            --                    Debug.log "PropInt" value
+            --            in
+            --            Widget.float m
+            text "PropInt"
 
         PropFloat value ->
-            let
-                m =
-                    { value = value, string = String.fromFloat value, focus = True }
-            in
-            Widget.float m
+            --            let
+            --                m =
+            --                    { value = value, string = String.fromFloat value }
+            --            in
+            --            Widget.float m
+            text "PropFloat"
 
         PropBool value ->
             input [ type_ "checkbox", Html.Attributes.checked value ] []

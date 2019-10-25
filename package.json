@@ -21,7 +21,6 @@
     "posthtml-content": "0.0.2",
     "posthtml-favicons": "1.3.0",
     "posthtml-head-elements": "0.5.1",
-    "posthtml-minifier": "0.1.0",
     "posthtml-style-to-file": "0.2.0",
     "prepack": "0.2.54",
     "uglify-js": "3.6.3"

@@ -33,7 +33,7 @@ view : Model -> Tiled.Level -> Html.Html (Model -> Model)
 view m l =
     let
         info =
-            Tiled.Util.levelData l
+            Tiled.Util.getLevelData l
 
         w =
             toFloat <| info.width * info.tilewidth

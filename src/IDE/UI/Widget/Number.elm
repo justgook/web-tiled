@@ -1,4 +1,4 @@
-module IDE.UI.Widget.Number exposing (float)
+module IDE.UI.Widget.Number exposing (float, int)
 
 --https://www.sketch.com/docs/the-interface/inspector/
 
@@ -12,8 +12,30 @@ type alias FloatModel a =
     { a
         | value : Float
         , string : String
-        , focus : Bool
     }
+
+
+type alias IntModel a =
+    { a
+        | value : Int
+        , string : String
+    }
+
+
+int : IntModel a -> Html (IntModel a -> IntModel a)
+int m =
+    input
+        [ Event.onInput
+            (\s m_ ->
+                { m_
+                    | value = Math.calc s |> Result.map round |> Result.withDefault m_.value
+                    , string = s
+                }
+            )
+        , type_ "text"
+        , value m.string
+        ]
+        []
 
 
 float : FloatModel a -> Html (FloatModel a -> FloatModel a)
@@ -26,16 +48,8 @@ float m =
                     , string = s
                 }
             )
-        , Event.onBlur (\m_ -> { m_ | focus = False })
-        , Event.onFocus (\m_ -> { m_ | focus = True })
         , type_ "text"
-        , value
-            (if m.focus then
-                m.string
-
-             else
-                formatFloat m.value
-            )
+        , value m.string
         ]
         []
 

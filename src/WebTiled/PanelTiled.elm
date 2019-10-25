@@ -1,4 +1,4 @@
-module WebTiled.PanelTiled exposing (Kind(..), Model, init, view)
+module WebTiled.PanelTiled exposing (Kind(..), Message(..), Model, init, view)
 
 import Dict exposing (Dict)
 import Html exposing (Attribute, Html, a, button, div, h1, header, input, nav, span, table, tbody, td, text, th, thead, tr)
@@ -29,10 +29,18 @@ type Kind
     | Render
 
 
+type Message
+    = Editor (Model -> Model)
+    | Level (Tiled.Level -> Tiled.Level)
+    | EditorLevel (Model -> Tiled.Level -> ( Model, Tiled.Level ))
+
+
 type alias Model =
     { render : RenderPanel.Model
     , tilesets : TilesetPanel.Model
-    , widgetCache : Dict String ()
+    , widgetCache :
+        { number : Dict String String
+        }
     }
 
 
@@ -40,38 +48,45 @@ init : Model
 init =
     { render = RenderPanel.init
     , tilesets = TilesetPanel.init
-    , widgetCache = Dict.empty
+    , widgetCache =
+        { number = Dict.empty
+        }
     }
 
 
-view : Model -> String -> Tiled.Level -> Width -> Height -> Kind -> Html (Model -> Model)
 view editor relUrl level w_ h_ m =
     case m of
         MainTools ->
             bare w_ h_ [ mainToolbar ]
+                |> Html.map Editor
 
         LayerTools ->
             bare w_ h_ [ layerToolbar ]
+                |> Html.map Editor
 
         ObjectTools ->
             bare w_ h_ []
+                |> Html.map Editor
 
         LevelProperties ->
-            LevelPropertiesPanel.view level
+            LevelPropertiesPanel.view editor.widgetCache level
                 |> panel w_ h_ "Properties"
-                |> Html.map (\fn model -> model)
+                |> Html.map EditorLevel
 
         Properties ->
             panel w_ h_ "Properties" (propertiesTable ( "Object", [] ) [])
+                |> Html.map Editor
 
         Layers ->
-            bare w_ h_ (layers (Tiled.Util.levelData level).layers)
+            bare w_ h_ (layers (Tiled.Util.getLevelData level).layers)
+                |> Html.map Editor
 
         Tilesets ->
-            [ TilesetPanel.view editor.tilesets relUrl (Tiled.Util.levelData level).tilesets
+            [ TilesetPanel.view editor.tilesets relUrl (Tiled.Util.getLevelData level).tilesets
                 |> Html.map (\fn model -> { model | tilesets = fn model.tilesets })
             ]
                 |> panel w_ h_ "Tilesets"
+                |> Html.map Editor
 
         Render ->
             panel w_
@@ -79,6 +94,7 @@ view editor relUrl level w_ h_ m =
                 "Render"
                 [ RenderPanel.view editor.render level
                     |> Html.map (\fn model -> { model | render = fn model.render })
+                    |> Html.map Editor
                 ]
 
 

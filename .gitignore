@@ -20,6 +20,7 @@ gh-pages/assets/
 
 #Other stuff
 documentation.json
+/index.html
 gh-pages/*
 !gh-pages/404.html
 !gh-pages/index.html

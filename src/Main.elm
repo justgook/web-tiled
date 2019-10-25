@@ -5,31 +5,19 @@ import Browser.Dom as Browser
 import Browser.Events
 import Html exposing (Html)
 import Http
-import IDE.UI.Html exposing (Message(..), ResizeInfo)
+import IDE.UI.Html exposing (ResizeInfo)
 import IDE.UI.Tree
+import Message exposing (Message(..), SucceedData)
 import Task
 import Tiled
 import Tiled.Level exposing (Level)
 import WebTiled.PanelTiled as PanelTiled exposing (Kind(..))
 
 
-type Message
-    = UI (IDE.UI.Html.Message (PanelTiled.Model -> PanelTiled.Model))
-    | Resize Int Int
-    | Init (Result Http.Error Level) SucceedData
-
-
 type Model
     = Loading
     | Succeed SucceedData Level
     | Fail
-
-
-type alias SucceedData =
-    { ui2 : IDE.UI.Html.Model PanelTiled.Kind
-    , relUrl : String
-    , editor : PanelTiled.Model
-    }
 
 
 main : Program () Model Message
@@ -54,8 +42,20 @@ subscriptions _ =
 update : Message -> Model -> ( Model, Cmd Message )
 update msg model_ =
     case ( msg, model_ ) of
-        ( UI (IDE.UI.Html.Panel fn), Succeed model level ) ->
-            ( Succeed { model | editor = fn model.editor } level, Cmd.none )
+        ( UI (IDE.UI.Html.Panel msg2), Succeed model level ) ->
+            case msg2 of
+                PanelTiled.Editor fn ->
+                    ( Succeed { model | editor = fn model.editor } level, Cmd.none )
+
+                PanelTiled.Level fn ->
+                    ( Succeed model (fn level), Cmd.none )
+
+                PanelTiled.EditorLevel fn ->
+                    let
+                        ( newEditor, newLevel ) =
+                            fn model.editor level
+                    in
+                    ( Succeed { model | editor = newEditor } newLevel, Cmd.none )
 
         ( UI msg_, Succeed model level ) ->
             ( Succeed { model | ui2 = IDE.UI.Html.update msg_ model.ui2 } level, Cmd.none )
