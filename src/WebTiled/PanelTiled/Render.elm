@@ -4,6 +4,7 @@ import Html
 import Html.Attributes as Html
 import Html.Lazy
 import IDE.UI.Transform.DragScale as DragScale exposing (DragScale)
+import IDE.UI.Transform.Select as Select exposing (Select)
 import Tiled.Level as Tiled
 import Tiled.Util
 import TypedSvg exposing (..)
@@ -14,7 +15,7 @@ import WebTiled.Svg.Level
 
 
 type alias Model =
-    DragScale {}
+    DragScale (Select {})
 
 
 init : Model
@@ -24,6 +25,7 @@ init =
         { x = 0
         , y = 0
         }
+    , select = Nothing
     }
 
 
@@ -42,14 +44,18 @@ view m l =
     Html.div
         [ Html.style "background-color" info.backgroundcolor
         , Html.style "overflow" "hidden"
+        , Html.style "width" "100%"
         , Html.style "height" "100%"
         , TypedSvg.Events.on "wheel" DragScale.handlerWheel
         ]
         [ Html.div
-            [ Html.style "position" "absolute"
-            , DragScale.apply m
+            [ Html.style "display" "table"
             ]
-            [ Html.Lazy.lazy5 content info.layers w h info.tilewidth info.tileheight ]
+            [ Html.div [ DragScale.apply m ]
+                [ Html.Lazy.lazy5 content info.layers w h info.tilewidth info.tileheight
+                , Select.select m
+                ]
+            ]
         ]
 
 

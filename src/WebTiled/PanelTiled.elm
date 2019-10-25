@@ -1,16 +1,19 @@
 module WebTiled.PanelTiled exposing (Kind(..), Model, init, view)
 
-import Dict
+import Dict exposing (Dict)
 import Html exposing (Attribute, Html, a, button, div, h1, header, input, nav, span, table, tbody, td, text, th, thead, tr)
 import Html.Attributes exposing (class, colspan, style, type_)
 import Html.Lazy
 import IDE.Internal.List as List
 import IDE.UI.Tree exposing (Height, Width)
+import IDE.UI.Widget.Number as Number
 import Tiled.Layer as Layer
 import Tiled.Level as Tiled
 import Tiled.Properties exposing (Properties, Property(..))
 import Tiled.Tileset as Tileset
 import Tiled.Util
+import WebTiled.PanelTiled.LevelProperties as LevelPropertiesPanel
+import WebTiled.PanelTiled.Properties exposing (propertiesTable)
 import WebTiled.PanelTiled.Render as RenderPanel
 import WebTiled.PanelTiled.Tileset as TilesetPanel
 
@@ -29,6 +32,7 @@ type Kind
 type alias Model =
     { render : RenderPanel.Model
     , tilesets : TilesetPanel.Model
+    , widgetCache : Dict String ()
     }
 
 
@@ -36,6 +40,7 @@ init : Model
 init =
     { render = RenderPanel.init
     , tilesets = TilesetPanel.init
+    , widgetCache = Dict.empty
     }
 
 
@@ -52,7 +57,9 @@ view editor relUrl level w_ h_ m =
             bare w_ h_ []
 
         LevelProperties ->
-            panel w_ h_ "Properties" (propertiesTable ( "Map", levelProperties level ) ((Tiled.Util.levelData level).properties |> customProps))
+            LevelPropertiesPanel.view level
+                |> panel w_ h_ "Properties"
+                |> Html.map (\fn model -> model)
 
         Properties ->
             panel w_ h_ "Properties" (propertiesTable ( "Object", [] ) [])
@@ -110,32 +117,6 @@ bare w_ h_ =
         , style "flex-flow" "column"
         , style "position" "relative"
         ]
-
-
-levelProperties : Tiled.Level -> List (Html msg)
-levelProperties l =
-    let
-        info =
-            Tiled.Util.levelData l
-    in
-    [ propertyRow "Orientation" (PropString "Todo")
-    , propertyRow "Width" (PropInt info.width)
-    , propertyRow "Height" (PropInt info.height)
-    , propertyRow "Tile Width" (PropInt info.tilewidth)
-    , propertyRow "Tile Height" (PropInt info.tileheight)
-    , propertyRow "Infinite" (PropBool info.infinite)
-
-    --    , propertyRow "Tile Side Length (HEX)" (PropString "Todo")
-    --    , propertyRow "Stagger Axis" (PropString "Todo")
-    --    , propertyRow "Stagger Index" (PropString "Todo")
-    --    , propertyRow "Tile Layer Format" (PropString "Todo")
-    --    , propertyRow "Output Chunk Width" (PropString "Todo")
-    --    , propertyRow "Output Chunk Height" (PropString "Todo")
-    , propertyRow "Tile Render Order" (PropString "Todo")
-
-    --    , propertyRow "Compression Level" (PropString "Todo")
-    , propertyRow "Background Color" (PropColor info.backgroundcolor)
-    ]
 
 
 mainToolbar =
@@ -221,88 +202,3 @@ layers l =
             l
         )
     ]
-
-
-propertiesTable : ( String, List (Html msg) ) -> List (Html msg) -> List (Html msg)
-propertiesTable ( mainText, props1 ) props2 =
-    [ table [ class "table-striped" ]
-        [ thead []
-            [ tr []
-                [ th []
-                    [ text "Property" ]
-                , th []
-                    [ text "Value" ]
-                ]
-            ]
-        , tbody []
-            [ tr []
-                [ th [ colspan 2, style "background-color" "#dcdfe1" ]
-                    [ text mainText ]
-                ]
-            ]
-        , tbody [] props1
-        , tbody []
-            [ tr []
-                [ th [ colspan 2, style "background-color" "#dcdfe1" ]
-                    [ text "Custom Properties" ]
-                ]
-            ]
-        , tbody [] props2
-        ]
-    ]
-
-
-customProps : Properties -> List (Html msg)
-customProps =
-    Dict.foldl (\k v acc -> propertyRow k v :: acc) []
-
-
-propertyRow key prop =
-    tr []
-        [ td []
-            [ text key ]
-        , td []
-            [ propToWidget prop ]
-        ]
-
-
-propToWidget prop =
-    case prop of
-        PropString value ->
-            text value
-
-        PropColor value ->
-            let
-                color =
-                    if value == "" then
-                        "#111111"
-
-                    else
-                        value
-            in
-            input [ type_ "color", Html.Attributes.value color ] []
-
-        PropInt value ->
-            text <| String.fromInt value
-
-        PropFloat value ->
-            text <| fromFloat value
-
-        PropBool value ->
-            input [ type_ "checkbox", Html.Attributes.checked value ] []
-
-        _ ->
-            text "propertyRow"
-
-
-fromFloat : Float -> String
-fromFloat f =
-    let
-        s =
-            String.fromFloat f
-    in
-    if String.contains "." s || String.contains "e" s then
-        s
-
-    else
-        s ++ ".0"

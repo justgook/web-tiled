@@ -7,12 +7,6 @@
     <meta charset="utf-8" />
     <link rel="stylesheet" href="css/photon.min.css">
     <link rel="stylesheet" href="css/flaticon.css">
-    <posthtml-head-elements>
-        <script src="./bundle.js"></script>
-        <script src="./script.js"></script>
-        <!--        <script src="https://unpkg.com/elm-debug-transformer@0.0.7/dist/elm-console-debug.js"></script>-->
-        <!--        <script>ElmConsoleDebug.register()</script>-->
-    </posthtml-head-elements>
     <style>
 
         .vResize, .hResize {
@@ -39,6 +33,7 @@
             bottom: 0;
             left: -5px;
         }
+
         canvas, img, image {
             image-rendering: optimizeSpeed; /* Older versions of FF */
             image-rendering: -moz-crisp-edges; /* FF 6.0+ */
@@ -47,7 +42,63 @@
             image-rendering: pixelated; /* Awesome future-browsers*/
             -ms-interpolation-mode: nearest-neighbor; /* IE */
         }
+
+        input {
+            padding: 0;
+            margin: 0;
+
+            border: none;
+            display: inline;
+            box-sizing: border-box;
+            min-width: 100%;
+
+            outline-offset: 0;
+            background: transparent;
+            transition-property: background-color;
+            transition-timing-function: cubic-bezier(0.4, 0.0, 1, 1);
+            transition-duration: 0.2s
+        }
+
+        input:focus {
+            transition-timing-function: cubic-bezier(0.0, 0.0, 0.2, 1);
+            transition-duration: 0.25s;
+            background-color: #ccc;
+        }
+
+        input:active {
+            background: transparent;
+            outline-color: transparent;
+        }
+
+        :focus {
+            outline: none;
+        }
+        :active, :active td {
+            transition: background-color 0.25s, color 0s;
+            transition-timing-function: cubic-bezier(0.0, 0.0, 0.2, 1);
+
+        }
+        :active tr {
+            transition-delay: 0.4s;
+        }
+
+
+
+        /*photon fix*/
+        td > input {
+            margin: -2px -15px;
+            padding: 2px 2px 2px 15px;
+        }
+
+
     </style>
+    <posthtml-head-elements>
+        <script src="./bundle.js"></script>
+        <script src="./script.js"></script>
+        <!--        <script src="https://unpkg.com/elm-debug-transformer@0.0.7/dist/elm-console-debug.js"></script>-->
+        <!--        <script>ElmConsoleDebug.register()</script>-->
+    </posthtml-head-elements>
+
 </head>
 
 <body>

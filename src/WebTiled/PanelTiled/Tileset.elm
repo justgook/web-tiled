@@ -15,7 +15,8 @@ import WebTiled.Svg.Tileset
 
 type alias Model =
     DragScale
-        { active : Int
+        { activeTab : Int
+        , gid : List Int
         }
 
 
@@ -26,7 +27,8 @@ init =
         { x = 0
         , y = 0
         }
-    , active = 1
+    , activeTab = 1
+    , gid = []
     }
 
 
@@ -39,7 +41,7 @@ view m relUrl t =
     div
         [ style "height" "100%"
         ]
-        [ Html.Lazy.lazy2 tilesetsTabsWrap m.active t
+        [ Html.Lazy.lazy2 tilesetsTabsWrap m.activeTab t
         , div
             [ style "overflow" "hidden"
             , style "height" "100%"
@@ -49,7 +51,7 @@ view m relUrl t =
                 [ DragScale.apply m
                 , style "transform-origin" "0 0"
                 ]
-                [ Html.Lazy.lazy3 tilesetsContentWrap relUrl t m.active ]
+                [ Html.Lazy.lazy3 tilesetsContentWrap relUrl t m.activeTab ]
             ]
         ]
 
@@ -129,7 +131,7 @@ getActiveSize i b =
 
 
 activate i m =
-    { init | active = i }
+    { init | activeTab = i }
 
 
 {-| Returns `Just` the element at the given index in the list,
