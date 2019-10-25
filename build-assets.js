@@ -38,7 +38,6 @@ server.listen(port, ()=> {
 function screenshot(done) {
     const url = `http://localhost:${port}/`;
     const savePreview = `gh-pages/${process.env.GAME}.png`;
-    console.log("aa");
     const preview = new Promise((resolve, reject) =>
 
         takeScreenShot.fromURL(url, savePreview,

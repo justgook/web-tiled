@@ -11,7 +11,7 @@ const info = {
     twitterName: "@justgook",
     favicon: `${root}/${process.env.GAME_FAVICON}`,
     image: `${process.env.GAME}.png`,
-    facebookId: "2333644500291007",
+    facebookId: "1374132716094209",
 };
 const socialTags_ = ({ facebook, twitter }) =>
     ({
