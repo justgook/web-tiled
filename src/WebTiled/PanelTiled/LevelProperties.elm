@@ -22,7 +22,7 @@ levelProperties l =
         _ =
             Cursor.update
                 { get = .width
-                , set = \a b -> { a | width = b }
+                , set = \comp world -> { world | width = comp }
                 }
 
         _ =
