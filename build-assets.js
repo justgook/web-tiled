@@ -29,7 +29,7 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(port, ()=> {
-    console.log("server started")
+    console.log("server started");
     screenshot(() => server.close());
 });
 
@@ -38,8 +38,8 @@ server.listen(port, ()=> {
 function screenshot(done) {
     const url = `http://localhost:${port}/`;
     const savePreview = `gh-pages/${process.env.GAME}.png`;
+    setTimeout(()=> process.exit(2),30000);
     const preview = new Promise((resolve, reject) =>
-
         takeScreenShot.fromURL(url, savePreview,
             {
                 show: true,
@@ -53,5 +53,5 @@ function screenshot(done) {
                 resolve()
             }
         ));
-     preview.then(done);
+    preview.then(done);
 }

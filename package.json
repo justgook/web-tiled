@@ -7,22 +7,22 @@
   "license": "MIT",
   "private": true,
   "devDependencies": {
-    "electron": "6.0.6"
+    "electron": "7.1.7"
   },
   "scripts": {
     "start": "electron ."
   },
   "dependencies": {
     "glslx": "0.1.26",
-    "htmlnano": "0.2.4",
-    "jscodeshift": "0.6.4",
-    "node-server-screenshot": "0.2.2",
+    "htmlnano": "0.2.5",
+    "jscodeshift": "0.7.0",
+    "node-server-screenshot": "0.2.3",
     "posthtml-cli": "0.5.1",
     "posthtml-content": "0.0.2",
     "posthtml-favicons": "1.3.0",
     "posthtml-head-elements": "0.5.1",
     "posthtml-style-to-file": "0.2.0",
     "prepack": "0.2.54",
-    "uglify-js": "3.6.3"
+    "uglify-js": "3.7.4"
   }
 }
