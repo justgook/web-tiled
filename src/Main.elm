@@ -3,24 +3,33 @@ module Main exposing (main)
 import Browser
 import Browser.Dom as Browser
 import Browser.Events
+import Dict
 import Html exposing (Html)
+import Html.Attributes
 import Http
 import IDE.UI.Html exposing (ResizeInfo)
 import IDE.UI.Tree
-import Message exposing (Message(..), SucceedData)
+import Message exposing (Editor, Message(..))
 import Task
 import Tiled
-import Tiled.Level exposing (Level)
+import Tiled.Level
+import WebTiled.DropFiles as DropFiles
 import WebTiled.PanelTiled as PanelTiled exposing (Kind(..))
 
 
-type Model
+type Level
     = Loading
-    | Succeed SucceedData Level
-    | Fail
+    | Succeed Tiled.Level.Level
+    | Fail String
 
 
-main : Program () Model Message
+type alias Model_ =
+    { level : Level
+    , editor : Editor
+    }
+
+
+main : Program () Model_ Message
 main =
     Browser.document
         { init = init
@@ -34,59 +43,123 @@ main =
         }
 
 
-subscriptions : Model -> Sub Message
+subscriptions : Model_ -> Sub Message
 subscriptions _ =
     Browser.Events.onResize Resize
 
 
-update : Message -> Model -> ( Model, Cmd Message )
-update msg model_ =
-    case ( msg, model_ ) of
-        ( UI (IDE.UI.Html.Panel msg2), Succeed model level ) ->
+update : Message -> Model_ -> ( Model_, Cmd Message )
+update msg ({ editor } as model) =
+    case ( msg, model.level ) of
+        ( UI (IDE.UI.Html.Custom msg2), Succeed level ) ->
             case msg2 of
                 PanelTiled.Editor fn ->
-                    ( Succeed { model | editor = fn model.editor } level, Cmd.none )
+                    ( { model | editor = { editor | editor = fn editor.editor } }
+                    , Cmd.none
+                    )
 
                 PanelTiled.Level fn ->
-                    ( Succeed model (fn level), Cmd.none )
+                    ( { model | level = Succeed (fn level) }
+                    , Cmd.none
+                    )
 
                 PanelTiled.EditorLevel fn ->
                     let
                         ( newEditor, newLevel ) =
-                            fn model.editor level
+                            fn editor.editor level
                     in
-                    ( Succeed { model | editor = newEditor } newLevel, Cmd.none )
+                    ( { model
+                        | level = Succeed newLevel
+                        , editor = { editor | editor = newEditor }
+                      }
+                    , Cmd.none
+                    )
 
-        ( UI msg_, Succeed model level ) ->
-            ( Succeed { model | ui2 = IDE.UI.Html.update msg_ model.ui2 } level, Cmd.none )
-
-        ( Resize w h, Succeed model level ) ->
-            let
-                ui2 =
-                    model.ui2
-            in
-            ( Succeed { model | ui2 = { ui2 | node = IDE.UI.Tree.setSize w h model.ui2.node } } level
+        ( UI msg_, Succeed level ) ->
+            ( { model | editor = { editor | ui2 = IDE.UI.Html.update msg_ editor.ui2 } }
             , Cmd.none
             )
 
-        ( Init level model, _ ) ->
+        ( Resize w h, _ ) ->
             let
-                m =
-                    case level of
+                ui2 =
+                    editor.ui2
+            in
+            ( { model
+                | editor = { editor | ui2 = { ui2 | node = IDE.UI.Tree.setSize w h editor.ui2.node } }
+              }
+            , Cmd.none
+            )
+
+        ( Init gotLevel, _ ) ->
+            let
+                level =
+                    case gotLevel of
                         Ok level_ ->
-                            Succeed model level_
+                            Succeed level_
 
                         Err _ ->
-                            Fail
+                            Fail "HTTP ERROR"
             in
-            ( m, Task.perform (\{ scene } -> Resize (round scene.width) (round scene.height)) Browser.getViewport )
+            ( { model | level = level }
+            , Task.perform
+                (\{ scene } ->
+                    Resize (round scene.width) (round scene.height)
+                )
+                Browser.getViewport
+            )
+
+        ( FilesDropped task, Succeed level ) ->
+            ( model, Task.attempt FilesParsed task )
+
+        ( FilesParsed result, current ) ->
+            let
+                _ =
+                    Debug.log "FilesParsed" "result"
+            in
+            result
+                |> Result.toMaybe
+                |> Maybe.map
+                    (List.foldl
+                        (\file ( files, level ) ->
+                            case file of
+                                ( name, DropFiles.Level l ) ->
+                                    ( files, Succeed l )
+
+                                ( name, value ) ->
+                                    ( Dict.insert name value files, level )
+                        )
+                        ( editor.files, current )
+                    )
+                |> Maybe.map
+                    (\( files, level ) ->
+                        ( { model
+                            | level = level
+                            , editor = { editor | files = files }
+                          }
+                        , Cmd.none
+                        )
+                    )
+                |> Maybe.withDefault ( model, Cmd.none )
 
         _ ->
-            ( model_, Cmd.none )
+            ( model, Cmd.none )
 
 
-init : a -> ( Model, Cmd Message )
+init : a -> ( Model_, Cmd Message )
 init _ =
+    let
+        url =
+            "top-down-adventure/demo.json"
+    in
+    ( { level = Loading
+      , editor = initEditor url
+      }
+    , getLevel url
+    )
+
+
+initEditor url =
     let
         topToolbar =
             IDE.UI.Tree.node MainTools
@@ -108,10 +181,7 @@ init _ =
                 |> IDE.UI.Tree.addEast center
                 |> IDE.UI.Tree.addEast rightSide
 
-        --                |> IDE.UI.Tree.addNorth topToolbar
-        url =
-            "top-down-adventure/demo.json"
-
+        --|> IDE.UI.Tree.addNorth topToolbar
         relUrl =
             String.split "/" url
                 |> List.reverse
@@ -119,43 +189,36 @@ init _ =
                 |> (::) ""
                 |> List.reverse
                 |> String.join "/"
-
-        info =
-            { ui2 =
-                { node = newNode
-                , resizeInfo = Nothing
-                }
-            , relUrl = relUrl
-            , editor = PanelTiled.init
-            }
-
-        cmd =
-            [ getLevel url info
-            ]
-                |> Cmd.batch
     in
-    ( Loading
-    , cmd
-    )
+    { ui2 =
+        { node = newNode
+        , resizeInfo = Nothing
+        }
+    , relUrl = relUrl
+    , editor = PanelTiled.init
+    , files = Dict.empty
+    }
 
 
-getLevel : String -> SucceedData -> Cmd Message
-getLevel url info =
+getLevel : String -> Cmd Message
+getLevel url =
     Http.get
         { url = url
-        , expect = Http.expectJson (\result -> Init result info) Tiled.decode
+        , expect = Http.expectJson (\result -> Init result) Tiled.decode
         }
 
 
-view : Model -> Html Message
+view : Model_ -> Html Message
 view model =
-    case model of
-        Succeed m level ->
-            IDE.UI.Html.view (PanelTiled.view m.editor m.relUrl level) m.ui2
+    case model.level of
+        Succeed level ->
+            [ IDE.UI.Html.view (PanelTiled.view model.editor level) model.editor.ui2
                 |> Html.map UI
+            ]
+                |> Html.main_ [ Html.Attributes.map FilesDropped DropFiles.onDrop ]
 
         Loading ->
-            Html.span [] []
+            Html.span [] [ Html.text "Loading .." ]
 
-        Fail ->
-            Html.span [] []
+        Fail err ->
+            Html.span [] [ Html.text <| "FAIL:" ++ err ]

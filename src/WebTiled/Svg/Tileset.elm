@@ -1,5 +1,6 @@
 module WebTiled.Svg.Tileset exposing (header, view)
 
+import Dict exposing (Dict)
 import Html exposing (div)
 import Html.Lazy
 import IDE.Internal.List as List
@@ -8,6 +9,7 @@ import TypedSvg exposing (..)
 import TypedSvg.Attributes exposing (viewBox, xlinkHref)
 import TypedSvg.Attributes.InPx exposing (..)
 import TypedSvg.Core exposing (Svg, attribute)
+import WebTiled.DropFiles as DropFiles
 
 
 header : String -> List Tileset.Tileset -> Svg a
@@ -46,8 +48,8 @@ header relUrl t =
         |> svg [ width 0, height 0, viewBox 0 0 0 0 ]
 
 
-view : String -> List Tileset.Tileset -> Int -> List (Svg msg)
-view relUrl t activeTab =
+view : String -> Dict String DropFiles.File -> List Tileset.Tileset -> Int -> List (Svg msg)
+view relUrl files t activeTab =
     List.indexedFoldl
         (\i tileset acc ->
             case tileset of
@@ -62,8 +64,16 @@ view relUrl t activeTab =
 
                             else
                                 []
+
+                        url =
+                            case Dict.get info.image files of
+                                Just (DropFiles.Image url_) ->
+                                    url_
+
+                                _ ->
+                                    relUrl ++ info.image
                     in
-                    div lattr [ Html.Lazy.lazy3 forLazy relUrl i info ]
+                    div lattr [ Html.Lazy.lazy3 forLazy url i info ]
                         :: acc
 
                 Tileset.ImageCollection imageCollectionTileData ->
@@ -73,9 +83,9 @@ view relUrl t activeTab =
         t
 
 
-forLazy relUrl i info =
+forLazy url i info =
     let
-        spacing =
+        internalSpacing =
             3
 
         imageId =
@@ -86,24 +96,24 @@ forLazy relUrl i info =
 
         w =
             toFloat (info.columns * info.tilewidth)
-                |> (+) (toFloat info.columns * spacing)
+                |> (+) (toFloat info.columns * internalSpacing)
 
         h =
             toFloat (rows * info.tileheight)
-                |> (+) (toFloat rows * spacing)
+                |> (+) (toFloat rows * internalSpacing)
     in
     svg
         [ width w, height h, viewBox 0 0 w h ]
         (defs []
             [ image
-                [ xlinkHref <| relUrl ++ info.image
+                [ xlinkHref <| url
                 , width <| toFloat info.imagewidth
                 , height <| toFloat info.imageheight
                 , id imageId
                 ]
                 []
             ]
-            :: tiles spacing imageId info
+            :: tiles internalSpacing imageId info
         )
 
 

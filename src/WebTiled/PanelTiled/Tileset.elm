@@ -1,5 +1,6 @@
 module WebTiled.PanelTiled.Tileset exposing (Model, init, view)
 
+import Dict exposing (Dict)
 import Html exposing (Html, div, span, text)
 import Html.Attributes exposing (class, style)
 import Html.Events
@@ -10,6 +11,7 @@ import Json.Decode as D
 import Tiled.Tileset as Tileset
 import TypedSvg.Events
 import VirtualDom exposing (Handler(..))
+import WebTiled.DropFiles exposing (File)
 import WebTiled.Svg.Tileset
 
 
@@ -36,8 +38,8 @@ handlerWheel =
     MayPreventDefault (D.map (\fn -> ( \m -> fn m |> limit, True )) DragScale.wheel)
 
 
-view : Model -> String -> List Tileset.Tileset -> Html (Model -> Model)
-view m relUrl t =
+view : Model -> String -> Dict String File -> List Tileset.Tileset -> Html (Model -> Model)
+view m relUrl files t =
     div
         [ style "height" "100%"
         ]
@@ -51,17 +53,13 @@ view m relUrl t =
                 [ DragScale.apply m
                 , style "transform-origin" "0 0"
                 ]
-                [ Html.Lazy.lazy3 tilesetsContentWrap relUrl t m.activeTab ]
+                [ Html.Lazy.lazy4 tilesetsContentWrap relUrl files t m.activeTab ]
             ]
         ]
 
 
-view_ relUrl_ t_ activeTab_ =
-    WebTiled.Svg.Tileset.view relUrl_ t_ activeTab_
-
-
-tilesetsContentWrap relUrl_ t_ active =
-    div [] (view_ relUrl_ t_ active)
+tilesetsContentWrap relUrl_ files t_ active =
+    div [] (WebTiled.Svg.Tileset.view relUrl_ files t_ active)
 
 
 tilesetsTabsWrap : Int -> List Tileset.Tileset -> Html (Model -> Model)

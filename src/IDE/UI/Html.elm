@@ -19,7 +19,7 @@ type Message msg
     | ResizeStop ResizeInfo
     | Resizing ResizeInfo
     | SetTab Path
-    | Panel msg
+    | Custom msg
 
 
 type alias ResizeInfo =
@@ -76,21 +76,14 @@ update msg model =
         SetTab _ ->
             Debug.todo "SetTab"
 
-        Panel _ ->
+        Custom _ ->
             Debug.todo "Panel"
 
 
 view : (Width -> Height -> panel -> Html msg) -> Model panel -> Html (Message msg)
 view drawPanel { node, resizeInfo } =
-    let
-        newConfig =
-            config drawPanel
-
-        attrs =
-            dragMove resizeInfo [ style "width" "100%", style "height" "100%" ]
-    in
-    [ IDE.UI.Render.view [] newConfig node ]
-        |> div attrs
+    [ IDE.UI.Render.view [] (config drawPanel) node ]
+        |> div (dragMove resizeInfo)
 
 
 config panel =
@@ -151,7 +144,7 @@ config panel =
     , tabsWest = tabsWest
     , panel =
         \w h d ->
-            panel w h d |> Html.map Panel
+            panel w h d |> Html.map Custom
     }
 
 
@@ -204,7 +197,7 @@ dragStart axis path1 path2 =
     Html.Events.custom "mousedown" decoder
 
 
-dragMove : Maybe ResizeInfo -> List (Attribute (Message msg)) -> List (Attribute (Message msg))
+dragMove : Maybe ResizeInfo -> List (Attribute (Message msg))
 dragMove resizing =
     case resizing of
         Just info ->
@@ -227,14 +220,14 @@ dragMove resizing =
             in
             decoder
                 |> Html.Events.custom "mousemove"
-                |> (\a attrs ->
+                |> (\a ->
                         a
                             :: dragStop info
-                            :: attrs
+                            :: []
                    )
 
         _ ->
-            identity
+            []
 
 
 dragStop : ResizeInfo -> Attribute (Message msg)

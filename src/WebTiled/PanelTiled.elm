@@ -54,7 +54,7 @@ init =
     }
 
 
-view editor relUrl level w_ h_ m =
+view { editor, relUrl, files } level w_ h_ m =
     case m of
         MainTools ->
             bare w_ h_ [ mainToolbar ]
@@ -82,7 +82,7 @@ view editor relUrl level w_ h_ m =
                 |> Html.map Editor
 
         Tilesets ->
-            [ TilesetPanel.view editor.tilesets relUrl (Tiled.Util.getLevelData level).tilesets
+            [ TilesetPanel.view editor.tilesets relUrl files (Tiled.Util.getLevelData level).tilesets
                 |> Html.map (\fn model -> { model | tilesets = fn model.tilesets })
             ]
                 |> panel w_ h_ "Tilesets"
