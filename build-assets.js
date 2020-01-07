@@ -28,30 +28,27 @@ const server = http.createServer((req, res) => {
 
 });
 
-server.listen(port, ()=> {
+server.listen(port, () => {
     console.log("server started");
     screenshot(() => server.close());
 });
 
 
-
 function screenshot(done) {
     const url = `http://localhost:${port}/`;
     const savePreview = `gh-pages/${process.env.GAME}.png`;
-    setTimeout(()=> process.exit(2),30000);
-    const preview = new Promise((resolve, reject) =>
-        takeScreenShot.fromURL(url, savePreview,
-            {
-                show: true,
-                width: 1200,
-                height: 675,
-                waitAfterSelector: "body > *",
-                waitMilliseconds: 100,
-            },
-            () => {
-                console.log(`Screenshot: ${savePreview}`);
-                resolve()
-            }
-        ));
-    preview.then(done);
+    setTimeout(() => process.exit(2), 30000);
+    takeScreenShot.fromURL(url, savePreview,
+        {
+            show: true,
+            width: 1200,
+            height: 675,
+            // waitAfterSelector: "body > *",
+            waitMilliseconds: 100,
+        },
+        () => {
+            console.log(`Screenshot: ${savePreview}`);
+            done()
+        }
+    );
 }
