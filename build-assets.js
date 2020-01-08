@@ -1,6 +1,7 @@
 const http = require("http");
 const fs = require("fs");
 const Pageres = require('pageres');
+const packageJson = require("./package.json");
 const port = 3000;
 
 const server = http.createServer((req, res) => {
@@ -34,31 +35,12 @@ server.listen(port, () => {
 });
 
 
-// function screenshot(done) {
-//     const url = `http://localhost:${port}/`;
-//     const savePreview = `gh-pages/${process.env.GAME}.png`;
-//     const preview = new Promise((resolve, reject) =>
-//         takeScreenShot.fromURL(url, savePreview,
-//             {
-//                 show: true,
-//                 width: 1200,
-//                 height: 675,
-//                 waitAfterSelector: "body > *",
-//                 waitMilliseconds: 100,
-//             },
-//             () => {
-//                 console.log(`Screenshot: ${savePreview}`);
-//                 resolve()
-//             }
-//         ));
-//     preview.then(done);
-// }
-
 function screenshot(done) {
     const url = `http://localhost:${port}/`;
     const preview = new Pageres({
         filename: process.env.GAME,
-        delay: 0
+        delay: 0,
+        css: `body::after{content: "Version: ${packageJson.version} - ${process.env.TRAVIS_BUILD_NUMBER}"; position:absolute; bottom: 10px; left:10px}`
     })
         .src(url, ['1200x675'])
         .dest(`${__dirname}/gh-pages`)
