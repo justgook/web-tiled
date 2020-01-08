@@ -1,6 +1,6 @@
 const http = require("http");
 const fs = require("fs");
-const takeScreenShot = require("node-server-screenshot");
+const Pageres = require('pageres');
 const port = 3000;
 
 const server = http.createServer((req, res) => {
@@ -34,21 +34,35 @@ server.listen(port, () => {
 });
 
 
+// function screenshot(done) {
+//     const url = `http://localhost:${port}/`;
+//     const savePreview = `gh-pages/${process.env.GAME}.png`;
+//     const preview = new Promise((resolve, reject) =>
+//         takeScreenShot.fromURL(url, savePreview,
+//             {
+//                 show: true,
+//                 width: 1200,
+//                 height: 675,
+//                 waitAfterSelector: "body > *",
+//                 waitMilliseconds: 100,
+//             },
+//             () => {
+//                 console.log(`Screenshot: ${savePreview}`);
+//                 resolve()
+//             }
+//         ));
+//     preview.then(done);
+// }
+
 function screenshot(done) {
     const url = `http://localhost:${port}/`;
-    const savePreview = `gh-pages/${process.env.GAME}.png`;
-    setTimeout(() => process.exit(2), 30000);
-    takeScreenShot.fromURL(url, savePreview,
-        {
-            show: true,
-            width: 1200,
-            height: 675,
-            // waitAfterSelector: "body > *",
-            waitMilliseconds: 100,
-        },
-        () => {
-            console.log(`Screenshot: ${savePreview}`);
-            done()
-        }
-    );
+    const preview = new Pageres({
+        filename: process.env.GAME,
+        delay: 0
+    })
+        .src(url, ['1200x675'])
+        .dest(`${__dirname}/gh-pages`)
+        .run();
+    preview.then(done);
 }
+
