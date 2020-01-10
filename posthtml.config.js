@@ -117,7 +117,7 @@ module.exports = {
 
         },
         "posthtml-favicons": {
-            outDir: `${root}/_social`,
+            outDir: `${root}/social`,
             configuration: {
                 path: `/social`,                                            // Path for overriding default icons path. `string`
                 appName: info.title,                                        // Your application"s name. `string`
