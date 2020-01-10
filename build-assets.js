@@ -8,10 +8,6 @@ const server = http.createServer((req, res) => {
     // `${process.env.GAME}_bundle.js`;
     if (req.url === "/") {
         req.url = `/index.html`;
-    } else if (/bundle\.js$/.test(req.url)) {
-        req.url = `/${process.env.GAME}_bundle.js`;
-    } else if (req.url === `/${process.env.GAME}.age.bin` || req.url === "/default.age.bin") {
-        req.url = `/${process.env.GAME}.age.bin`;
     }
 
     const path = __dirname + "/gh-pages" + req.url;
@@ -38,7 +34,7 @@ server.listen(port, () => {
 function screenshot(done) {
     const url = `http://localhost:${port}/`;
     const preview = new Pageres({
-        filename: process.env.GAME,
+        filename: "preview",
         delay: 0,
         css: `body::after{content: "Version: ${packageJson.version} - ${process.env.TRAVIS_BUILD_NUMBER}"; position:absolute; bottom: 10px; left:10px}`
     })

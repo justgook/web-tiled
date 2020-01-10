@@ -10,7 +10,7 @@ const info = {
     license: packageJson.license,
     twitterName: "@justgook",
     favicon: `${root}/${process.env.GAME_FAVICON}`,
-    image: `${process.env.GAME}.png`,
+    image: `preview.png`,
     facebookId: "1374132716094209",
 };
 const socialTags_ = ({ facebook, twitter }) =>
