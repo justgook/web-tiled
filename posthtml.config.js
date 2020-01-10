@@ -9,7 +9,7 @@ const info = {
     version: packageJson.version,
     license: packageJson.license,
     twitterName: "@justgook",
-    favicon: `${root}/${process.env.GAME_FAVICON}`,
+    favicon: `${root}/favicon.png`,
     image: `preview.png`,
     facebookId: "1374132716094209",
 };
@@ -98,7 +98,7 @@ module.exports = {
                             "content": "width=device-width, initial-scale=1"
                         }
                     ].concat(buildSocialTags(info).meta),
-                    "title": `${info.title}`,
+                    "title": info.title,
 
                     "base": [
                         {
@@ -121,7 +121,7 @@ module.exports = {
             configuration: {
                 path: `/_social`,                                           // Path for overriding default icons path. `string`
                 appName: info.title,                                        // Your application"s name. `string`
-                appShortName: process.env.GAME,                             // Your application"s short_name. `string`. Optional. If not set, appName will be used
+                //appShortName: process.env.GAME,                           // Your application"s short_name. `string`. Optional. If not set, appName will be used
                 appDescription: info.description,                           // Your application"s description. `string`
                 developerName: packageJson.author.name,                     // Your (or your developer"s) name. `string`
                 developerURL: packageJson.author.url,                       // Your (or your developer"s) URL. `string`

@@ -28,6 +28,7 @@ gh-pages/*
 !gh-pages/game.css
 !gh-pages/script.js
 !gh-pages/.gitignore
+!gh-pages/favicon.png
 
 !gh-pages/top-down-adventure
 #remotestorage.io
