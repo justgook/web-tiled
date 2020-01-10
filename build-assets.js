@@ -2,9 +2,11 @@ const http = require("http");
 const fs = require("fs");
 const Pageres = require('pageres');
 const packageJson = require("./package.json");
-const { execSync } = require("child_process");
-const gitCommand = execSync("git rev-parse --short HEAD");
+const revision = require('child_process')
+    .execSync('git rev-parse --short HEAD')
+    .toString().trim()
 const port = 3000;
+
 
 const server = http.createServer((req, res) => {
     // `${process.env.GAME}_bundle.js`;
@@ -37,8 +39,8 @@ function screenshot(done) {
     const url = `http://localhost:${port}/`;
     const preview = new Pageres({
         filename: "preview",
-        delay: 0,
-        css: `body::after{content: "Version: ${packageJson.version} - ${gitCommand}"; position:absolute; bottom: 10px; left:10px}`
+        delay: 1,
+        css: `body::after{content: "Version: ${packageJson.version} (${revision})"; position:absolute; bottom: 10px; left:10px}`
     })
         .src(url, ['1200x675'])
         .dest(`${__dirname}/gh-pages`)
