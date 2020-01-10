@@ -137,7 +137,7 @@
         const { api } = remoteStorage;
         api.getConfig(defaultConfig).then(() => {
                 const app = Object.values(Elm)[0].init({ node: document.querySelector("main") });
-                // createWidget(remoteStorage);
+                createWidget(remoteStorage);
                 api.rpc(app.ports.toStore.subscribe, app.ports.fromStore.send);
             }
         );

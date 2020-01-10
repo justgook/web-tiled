@@ -2,6 +2,8 @@ const http = require("http");
 const fs = require("fs");
 const Pageres = require('pageres');
 const packageJson = require("./package.json");
+const { execSync } = require("child_process");
+const gitCommand = execSync("git rev-parse --short HEAD");
 const port = 3000;
 
 const server = http.createServer((req, res) => {
@@ -36,7 +38,7 @@ function screenshot(done) {
     const preview = new Pageres({
         filename: "preview",
         delay: 0,
-        css: `body::after{content: "Version: ${packageJson.version} - ${process.env.TRAVIS_BUILD_NUMBER}"; position:absolute; bottom: 10px; left:10px}`
+        css: `body::after{content: "Version: ${packageJson.version} - ${gitCommand}"; position:absolute; bottom: 10px; left:10px}`
     })
         .src(url, ['1200x675'])
         .dest(`${__dirname}/gh-pages`)
