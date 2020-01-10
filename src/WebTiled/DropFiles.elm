@@ -1,4 +1,4 @@
-module WebTiled.DropFiles exposing (File(..), onDrop)
+module WebTiled.DropFiles exposing (DropInfo, File(..), onDrop)
 
 import Base64
 import File
@@ -10,7 +10,7 @@ import Tiled.Level
 import Tiled.Tileset
 
 
-onDrop : Html.Attribute (Task.Task String (List ( String, File )))
+onDrop : Html.Attribute (Task.Task String (List DropInfo))
 onDrop =
     Html.Events.custom "drop"
         (D.map
@@ -30,6 +30,11 @@ type File
     | Image String
 
 
+type alias DropInfo =
+    ( String, File, String )
+
+
+files : D.Decoder (Task.Task String (List DropInfo))
 files =
     D.field "dataTransfer" (D.field "files" (D.list File.decoder))
         |> D.map
@@ -37,7 +42,7 @@ files =
                 (\file ->
                     case File.mime file of
                         "image/png" ->
-                            (::) <| imgUrl file "image/png"
+                            (::) <| imgUrl file "image/base64"
 
                         "application/json" ->
                             (::) <| levelOrTileset file
@@ -50,11 +55,11 @@ files =
             )
 
 
-levelOrTileset : File.File -> Task.Task String ( String, File )
+levelOrTileset : File.File -> Task.Task String DropInfo
 levelOrTileset file =
     File.toString file
         |> Task.andThen
-            (\data ->
+            (\jsonString ->
                 case
                     D.decodeString
                         (D.oneOf
@@ -62,27 +67,31 @@ levelOrTileset file =
                             , Tiled.Tileset.decodeFile -1000 |> D.map Tileset
                             ]
                         )
-                        data
+                        jsonString
                         |> Result.mapError D.errorToString
                 of
                     Ok i ->
-                        Task.succeed ( File.name file, i )
+                        Task.succeed ( File.name file, i, jsonString )
 
                     Err i ->
                         Task.fail i
             )
 
 
-imgUrl : File.File -> String -> Task.Task String ( String, File )
+imgUrl : File.File -> String -> Task.Task String DropInfo
 imgUrl file mime =
     File.toBytes file
         |> Task.andThen
             (Base64.fromBytes
                 >> Maybe.map
-                    ((++) ("data:" ++ mime ++ ";base64,")
-                        >> Image
-                        >> Tuple.pair (File.name file)
-                        >> Task.succeed
+                    (\img ->
+                        ( File.name file
+                        , img
+                            |> (++) ("data:" ++ mime ++ ";base64,")
+                            |> Image
+                        , ""
+                        )
+                            |> Task.succeed
                     )
                 >> Maybe.withDefault (Task.fail "Base64.fromBytes")
             )

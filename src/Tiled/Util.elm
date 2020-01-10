@@ -1,6 +1,30 @@
-module Tiled.Util exposing (getLevelData, updateLevelData)
+module Tiled.Util exposing (dependencies, getLevelData, updateLevelData)
 
+import Set exposing (Set)
 import Tiled.Level as Level exposing (Level, LevelData)
+import Tiled.Tileset as Tileset
+
+
+dependencies : Level -> Set String
+dependencies level =
+    let
+        { layers, tilesets } =
+            getLevelData level
+    in
+    tilesets
+        |> List.foldl
+            (\tileset acc ->
+                case tileset of
+                    Tileset.Embedded { image } ->
+                        Set.insert image acc
+
+                    Tileset.Source { source } ->
+                        Set.insert source acc
+
+                    _ ->
+                        acc
+            )
+            Set.empty
 
 
 updateLevelData : (LevelData -> LevelData) -> Level -> Level

@@ -83,7 +83,9 @@
         :active tr {
             transition-delay: 0.4s;
         }
-
+        :active tr.no-delay {
+            transition-delay: 0s;
+        }
 
         /*photon fix*/
         td > input {
@@ -129,12 +131,20 @@
         // this is needed in order to make dragging work
         return false;
     });
-
-    setTimeout(() => Object.values(Elm)[0].init({ node: document.querySelector("main") }), 0)
+    const defaultConfig = { file: "hello.json" };
+    initRemoteStorage().then((remoteStorage) => {
+        const { api } = remoteStorage;
+        api.getConfig(defaultConfig).then(() => {
+                const app = Object.values(Elm)[0].init({ node: document.querySelector("main") });
+                // createWidget(remoteStorage);
+                api.rpc(app.ports.toStore.subscribe, app.ports.fromStore.send);
+            }
+        );
+    });
 
 
 </script>
-<main></main>
+
 </body>
 
 </html>

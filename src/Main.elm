@@ -3,33 +3,22 @@ module Main exposing (main)
 import Browser
 import Browser.Dom as Browser
 import Browser.Events
+import Common exposing (Editor, Message(..), Model)
 import Dict
 import Html exposing (Html)
 import Html.Attributes
 import Http
 import IDE.UI.Html exposing (ResizeInfo)
 import IDE.UI.Tree
-import Message exposing (Editor, Message(..))
+import RemoteStorage
 import Task
 import Tiled
-import Tiled.Level
+import Tiled.Util as Util
 import WebTiled.DropFiles as DropFiles
 import WebTiled.PanelTiled as PanelTiled exposing (Kind(..))
 
 
-type Level
-    = Loading
-    | Succeed Tiled.Level.Level
-    | Fail String
-
-
-type alias Model_ =
-    { level : Level
-    , editor : Editor
-    }
-
-
-main : Program () Model_ Message
+main : Program () Model Message
 main =
     Browser.document
         { init = init
@@ -43,15 +32,19 @@ main =
         }
 
 
-subscriptions : Model_ -> Sub Message
+subscriptions : Model -> Sub Message
 subscriptions _ =
-    Browser.Events.onResize Resize
+    [ Browser.Events.onResize Resize
+    , RemoteStorage.subscriptions
+        |> Sub.map (Result.map FromStore >> Result.withDefault FromStoreUnknown)
+    ]
+        |> Sub.batch
 
 
-update : Message -> Model_ -> ( Model_, Cmd Message )
+update : Message -> Model -> ( Model, Cmd Message )
 update msg ({ editor } as model) =
     case ( msg, model.level ) of
-        ( UI (IDE.UI.Html.Custom msg2), Succeed level ) ->
+        ( UI (IDE.UI.Html.Custom msg2), Common.Succeed level ) ->
             case msg2 of
                 PanelTiled.Editor fn ->
                     ( { model | editor = { editor | editor = fn editor.editor } }
@@ -59,7 +52,7 @@ update msg ({ editor } as model) =
                     )
 
                 PanelTiled.Level fn ->
-                    ( { model | level = Succeed (fn level) }
+                    ( { model | level = Common.Succeed (fn level) }
                     , Cmd.none
                     )
 
@@ -69,13 +62,22 @@ update msg ({ editor } as model) =
                             fn editor.editor level
                     in
                     ( { model
-                        | level = Succeed newLevel
+                        | level = Common.Succeed newLevel
                         , editor = { editor | editor = newEditor }
                       }
                     , Cmd.none
                     )
 
-        ( UI msg_, Succeed level ) ->
+                PanelTiled.EditorCmd fn ->
+                    let
+                        ( newEditor, cmd ) =
+                            fn editor.editor
+                    in
+                    ( { model | editor = { editor | editor = newEditor } }
+                    , cmd
+                    )
+
+        ( UI msg_, _ ) ->
             ( { model | editor = { editor | ui2 = IDE.UI.Html.update msg_ editor.ui2 } }
             , Cmd.none
             )
@@ -96,66 +98,109 @@ update msg ({ editor } as model) =
                 level =
                     case gotLevel of
                         Ok level_ ->
-                            Succeed level_
+                            Common.Succeed level_
 
                         Err _ ->
-                            Fail "HTTP ERROR"
+                            Common.Fail "HTTP ERROR"
             in
             ( { model | level = level }
-            , Task.perform
-                (\{ scene } ->
-                    Resize (round scene.width) (round scene.height)
-                )
-                Browser.getViewport
+            , [ RemoteStorage.getFiles
+              , Browser.getViewport |> Task.perform (\{ scene } -> Resize (round scene.width) (round scene.height))
+              ]
+                |> Cmd.batch
             )
 
-        ( FilesDropped task, Succeed level ) ->
+        ( FilesDropped task, _ ) ->
             ( model, Task.attempt FilesParsed task )
 
         ( FilesParsed result, current ) ->
-            let
-                _ =
-                    Debug.log "FilesParsed" "result"
-            in
             result
                 |> Result.toMaybe
                 |> Maybe.map
                     (List.foldl
-                        (\file ( files, level ) ->
+                        (\file ( files, level, cmd ) ->
                             case file of
-                                ( name, DropFiles.Level l ) ->
-                                    ( files, Succeed l )
+                                ( name, (DropFiles.Level l) as value, source ) ->
+                                    ( Dict.insert name value files
+                                    , Common.Succeed l
+                                    , RemoteStorage.storeFile "application/tiled.level-json" name source :: cmd
+                                    )
 
-                                ( name, value ) ->
-                                    ( Dict.insert name value files, level )
+                                ( name, (DropFiles.Tileset l) as value, source ) ->
+                                    ( Dict.insert name value files
+                                    , level
+                                    , RemoteStorage.storeFile "application/tiled.tileset-json" name source :: cmd
+                                    )
+
+                                ( name, (DropFiles.Image img) as value, _ ) ->
+                                    ( Dict.insert name value files
+                                    , level
+                                    , RemoteStorage.storeFile "image/base64" name img :: cmd
+                                    )
                         )
-                        ( editor.files, current )
+                        ( editor.files, current, [] )
                     )
                 |> Maybe.map
-                    (\( files, level ) ->
+                    (\( files, level, cmd ) ->
                         ( { model
                             | level = level
-                            , editor = { editor | files = files }
+                            , editor =
+                                { editor
+                                    | files = files
+                                    , inStore =
+                                        Dict.map (\_ _ -> Nothing) files
+                                            |> Dict.union editor.inStore
+                                }
                           }
-                        , Cmd.none
+                        , Cmd.batch cmd
                         )
                     )
                 |> Maybe.withDefault ( model, Cmd.none )
+
+        ( FromStore fn, current ) ->
+            let
+                newEditor =
+                    fn editor
+
+                level =
+                    Dict.diff newEditor.files editor.files
+                        |> Dict.foldl
+                            (\k v acc ->
+                                case v of
+                                    DropFiles.Level l ->
+                                        --let
+                                        --    _ =
+                                        --        Util.dependencies l
+                                        --            |> Debug.log "FromStore"
+                                        --in
+                                        Common.Succeed l
+
+                                    _ ->
+                                        acc
+                            )
+                            current
+            in
+            ( { model
+                | editor = newEditor
+                , level = level
+              }
+            , Cmd.none
+            )
 
         _ ->
             ( model, Cmd.none )
 
 
-init : a -> ( Model_, Cmd Message )
+init : a -> ( Model, Cmd Message )
 init _ =
     let
         url =
             "top-down-adventure/demo.json"
     in
-    ( { level = Loading
+    ( { level = Common.Loading
       , editor = initEditor url
       }
-    , getLevel url
+    , [ getLevel url ] |> Cmd.batch
     )
 
 
@@ -180,6 +225,7 @@ initEditor url =
             leftSide
                 |> IDE.UI.Tree.addEast center
                 |> IDE.UI.Tree.addEast rightSide
+                |> IDE.UI.Tree.addEast (IDE.UI.Tree.node FileManager)
 
         --|> IDE.UI.Tree.addNorth topToolbar
         relUrl =
@@ -197,6 +243,7 @@ initEditor url =
     , relUrl = relUrl
     , editor = PanelTiled.init
     , files = Dict.empty
+    , inStore = Dict.empty
     }
 
 
@@ -208,17 +255,17 @@ getLevel url =
         }
 
 
-view : Model_ -> Html Message
+view : Model -> Html Message
 view model =
     case model.level of
-        Succeed level ->
+        Common.Succeed level ->
             [ IDE.UI.Html.view (PanelTiled.view model.editor level) model.editor.ui2
                 |> Html.map UI
             ]
                 |> Html.main_ [ Html.Attributes.map FilesDropped DropFiles.onDrop ]
 
-        Loading ->
+        Common.Loading ->
             Html.span [] [ Html.text "Loading .." ]
 
-        Fail err ->
+        Common.Fail err ->
             Html.span [] [ Html.text <| "FAIL:" ++ err ]

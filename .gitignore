@@ -30,3 +30,5 @@ gh-pages/*
 !gh-pages/.gitignore
 
 !gh-pages/top-down-adventure
+#remotestorage.io
+armadietto/

@@ -1,102 +1,7 @@
-// https://dev.to/thepassle/web-components-from-zero-to-hero-4n4m
-// https://github.com/tonistiigi/audiosprite
-// https://github.com/goldfire/howler.js
-function howlerWrapper(Howl) {
-    const noop = function () {
-    };
-
-    const idToRemove = [];
-
-    class HowlerWrapper extends HTMLElement {
-
-
-        constructor() {
-            super();
-            this.sound = {
-                unload: noop,
-                on: noop,
-                loop: noop
-            };
-            this.config = { src: [], sprite: {} };
-            this.key = "0";
-            this.spriteName = "";
-            this.soundId = -1;
-            this.onFinish = this.onFinish.bind(this);
-            this.onEnd = this.onEnd.bind(this);
-            this.timeout = null;
-        }
-
-        connectedCallback() {
-            this.spriteName = this.getAttribute("sound-id");
-            this.key = this.getAttribute("data-key");
-            if (this.getAttribute("stop") !== "true") {
-                this.sound = new Howl({
-                    src: this.src,
-                    sprite: this.sprite
-                });
-
-                this.sound.on("end", this.onEnd);
-
-                this.soundId = this.sound.play(this.spriteName);
-
-            }
-
-        }
-
-        onEnd() {
-            clearTimeout(this.timeout);
-            // console.log("end", this.key);
-            if (!this.sound.loop(this.soundId)) {
-                idToRemove.push(this.key);
-                requestAnimationFrame(this.onFinish);
-            }
-        }
-
-        disconnectedCallback() {
-            // this.sound.unload();
-            console.log("disconnected!");
-        }
-
-
-        attributeChangedCallback(name, oldVal, newVal) {
-            if (name === "sound-id") {
-                this.spriteName = newVal;
-            } else if (name === "stop" && oldVal === "true" && newVal === "false") {
-                this.soundId = this.sound.play(this.spriteName);
-                this.timeout = setTimeout(this.onEnd, (this.soundId === null ? 0 : this.sound.duration(this.soundId)) * 1000 + 100);
-            } else if (name === "stop" && oldVal === "false" && newVal === "true") {
-                this.sound.stop(this.spriteName)
-            }
-        }
-
-        adoptedCallback() {
-            console.log("adopted!");
-        }
-
-        static get observedAttributes() {
-            return ["stop", "sound-id"];
-        }
-
-
-        onFinish() {
-            if (idToRemove.length) {
-                this.dispatchEvent(new CustomEvent("finish",
-                    {
-                        composed: false,
-                        bubbles: false,
-                        detail: { keys: idToRemove.splice(0, idToRemove.length) }
-                    }));
-            }
-        }
-    }
-
-    window.customElements.define("howler-sound", HowlerWrapper);
-}
-
 function loadScript(src) {
     return new Promise(function (resolve, reject) {
         var s;
-        s = document.createElement('script');
+        s = document.createElement("script");
         s.src = src;
         s.onload = resolve;
         s.onerror = reject;
@@ -104,13 +9,110 @@ function loadScript(src) {
     });
 }
 
-if (window.Howl) {
-    howlerWrapper(window.Howl);
-} else {
-    loadScript("https://cdnjs.cloudflare.com/ajax/libs/howler/2.1.2/howler.min.js")
-        .then(() =>{
-            howlerWrapper(window.Howl)
+function initRemoteStorage() {
+    return loadScript("https://unpkg.com/remotestoragejs@1.2.2/release/remotestorage.js")
+        .then(() => {
+            const dataPath = "web-tiled";
+            const remoteStorage = new RemoteStorage({ modules: [WebTiled] });
+            // remoteStorage.setApiKeys({  googledrive: "AIzaSyAiwd13yS5K1sD7c3iGOYCczMas3sK2yVE"  })
+            remoteStorage.access.claim(dataPath, "rw");
+            remoteStorage.caching.enable(`/${dataPath}/`);
+            const client = remoteStorage.scope(`/${dataPath}/`);
+            // remoteStorage["web-tiled"].listFiles()
+            remoteStorage.api = remoteStorage["web-tiled"];
+            return remoteStorage;
+            // return remoteStorage["web-tiled"]
+            //     .getConfig(defaultConfig)
+            //     .then((config) => ({ client, remoteStorage, config }));
+
         });
 }
 
+function createWidget(remoteStorage) {
+    loadScript("https://unpkg.com/remotestorage-widget@1.4.0/build/widget.js").then(() => {
+        const widget = new Widget(remoteStorage);
+        widget.attach();
+        const widgetElement = document.getElementById("remotestorage-widget")
+        widgetElement.style.bottom = 0;
+        widgetElement.style.right = 0;
+    });
+}
 
+
+const WebTiled = {
+    name: "web-tiled",
+    builder: function (privateClient, publicClient) {
+        const name = "web-tiled";
+        const files = "files";
+        privateClient.declareType("web-tiled-config", {
+            "$schema": "http://json-schema.org/draft-04/schema#",
+            "type": "object",
+            "properties": {
+                "file": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "file"
+            ]
+        });
+
+        function getConfig(defaultConfig) {
+            return privateClient.getObject(".config")
+                .then((gotConfig) => gotConfig ? gotConfig : setConfig(defaultConfig));
+        }
+
+        function setConfig(config) {
+            return privateClient.storeObject("web-tiled-config", ".config", config)
+                .then(function () {
+                    return config;
+                })
+        }
+
+        function getFile(path, maxAge) {
+            return privateClient.getFile(`${files}/${path}`, maxAge);
+        }
+
+        function storeFile(mimeType, path, body) {
+            return privateClient.storeFile(mimeType, `${files}/${path}`, body)
+        }
+
+        function getFiles(maxAge) {
+            return Promise.all([
+                privateClient.getListing(`${files}/`, maxAge).catch(() => ({})),
+                publicClient.getListing(`${files}/`, maxAge).catch(() => ({}))
+            ])
+                .then(([inPrivate, inPublic]) => ({ private: inPrivate, public: inPublic }))
+
+        }
+
+        // privateClient.on('change', function (evt) {
+        //     console.log('privateClient::change', evt);
+        // });
+        //
+        // publicClient.on('change', function (evt) {
+        //     console.log('publicClient::change', evt);
+        // });
+
+        function rpc(request, response) {
+            request(({ method, params, id }) => {
+
+                exports[method].apply(null, params)
+                    .then((data) => {
+                        // console.log(method, params, id, data);
+                        response({ id, data })
+                    })
+            });
+        }
+
+        const exports = {
+            rpc: rpc,
+            getConfig: getConfig,
+            setConfig: setConfig,
+            getFiles: getFiles,
+            getFile: getFile,
+            storeFile: storeFile,
+        };
+        return { exports }
+    }
+};

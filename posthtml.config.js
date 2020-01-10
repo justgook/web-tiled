@@ -98,7 +98,7 @@ module.exports = {
                             "content": "width=device-width, initial-scale=1"
                         }
                     ].concat(buildSocialTags(info).meta),
-                    "title": `${process.env.GAME} (${info.title})`,
+                    "title": `${info.title}`,
 
                     "base": [
                         {
@@ -111,15 +111,15 @@ module.exports = {
                     ],
 
                     "script": [
-                        { "src": `${process.env.GAME}_bundle.js` }
+                        { "src": `bundle.js` }
                     ]
                 }
 
         },
         "posthtml-favicons": {
-            outDir: `${root}/${process.env.GAME}_social`,
+            outDir: `${root}/_social`,
             configuration: {
-                path: `/${process.env.GAME}_social`,                                                  // Path for overriding default icons path. `string`
+                path: `/_social`,                                           // Path for overriding default icons path. `string`
                 appName: info.title,                                        // Your application"s name. `string`
                 appShortName: process.env.GAME,                             // Your application"s short_name. `string`. Optional. If not set, appName will be used
                 appDescription: info.description,                           // Your application"s description. `string`
@@ -133,7 +133,7 @@ module.exports = {
                 display: "fullscreen",                                      // Preferred display mode: "fullscreen", "standalone", "minimal-ui" or "browser". `string`
                 orientation: "any",                                         // Default orientation: "any", "natural", "portrait" or "landscape". `string`
                 scope: "/",                                                 // set of URLs that the browser considers within your app
-                start_url: `/${process.env.GAME}`,                    // Start URL when launching the application from a device. `string`
+                start_url: ``,                                              // Start URL when launching the application from a device. `string`
                 version: "1.0",                                             // Your application"s version string. `string`
                 logging: false,                                             // Print logs to console? `boolean`
                 pixel_art: true,                                            // Keeps pixels "sharp" when scaling up, for pixel art.  Only supported in offline mode.

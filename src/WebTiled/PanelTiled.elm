@@ -1,17 +1,13 @@
 module WebTiled.PanelTiled exposing (Kind(..), Message(..), Model, init, view)
 
 import Dict exposing (Dict)
-import Html exposing (Attribute, Html, a, button, div, h1, header, input, nav, span, table, tbody, td, text, th, thead, tr)
-import Html.Attributes exposing (class, colspan, style, type_)
-import Html.Lazy
-import IDE.Internal.List as List
+import Html exposing (Attribute, Html, a, button, div, h1, header, nav, span, text)
+import Html.Attributes exposing (class, style)
 import IDE.UI.Tree exposing (Height, Width)
-import IDE.UI.Widget.Number as Number
 import Tiled.Layer as Layer
 import Tiled.Level as Tiled
-import Tiled.Properties exposing (Properties, Property(..))
-import Tiled.Tileset as Tileset
 import Tiled.Util
+import WebTiled.PanelTiled.FileManager as FileManager
 import WebTiled.PanelTiled.LevelProperties as LevelPropertiesPanel
 import WebTiled.PanelTiled.Properties exposing (propertiesTable)
 import WebTiled.PanelTiled.Render as RenderPanel
@@ -27,17 +23,20 @@ type Kind
     | Layers
     | Tilesets
     | Render
+    | FileManager
 
 
-type Message
+type Message msg
     = Editor (Model -> Model)
     | Level (Tiled.Level -> Tiled.Level)
     | EditorLevel (Model -> Tiled.Level -> ( Model, Tiled.Level ))
+    | EditorCmd (Model -> ( Model, Cmd msg ))
 
 
 type alias Model =
     { render : RenderPanel.Model
     , tilesets : TilesetPanel.Model
+    , fileManager : FileManager.Model
     , widgetCache :
         { number : Dict String String
         }
@@ -48,13 +47,14 @@ init : Model
 init =
     { render = RenderPanel.init
     , tilesets = TilesetPanel.init
+    , fileManager = FileManager.init
     , widgetCache =
         { number = Dict.empty
         }
     }
 
 
-view { editor, relUrl, files } level w_ h_ m =
+view { editor, relUrl, files, inStore } level w_ h_ m =
     case m of
         MainTools ->
             bare w_ h_ [ mainToolbar ]
@@ -89,13 +89,25 @@ view { editor, relUrl, files } level w_ h_ m =
                 |> Html.map Editor
 
         Render ->
-            panel w_
-                h_
-                "Render"
-                [ RenderPanel.view editor.render level
-                    |> Html.map (\fn model -> { model | render = fn model.render })
-                    |> Html.map Editor
-                ]
+            [ RenderPanel.view editor.render level
+                |> Html.map (\fn model -> { model | render = fn model.render })
+            ]
+                |> panel w_ h_ "Render"
+                |> Html.map Editor
+
+        FileManager ->
+            [ FileManager.view editor.fileManager files inStore
+                |> Html.map
+                    (\fn model ->
+                        let
+                            ( newModel, cmd ) =
+                                fn model.fileManager
+                        in
+                        ( { model | fileManager = newModel }, cmd )
+                    )
+            ]
+                |> panel w_ h_ "File Manager"
+                |> Html.map EditorCmd
 
 
 panel w_ h_ title content =
