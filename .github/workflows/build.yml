@@ -61,8 +61,7 @@ jobs:
 
     - name: Build
       run: |
-        elm make src/Shmup.elm --optimize --output=./gh-pages/bundle.js
-        elm make src/Extra/Jump.elm --optimize --output=./gh-pages/jump.html
+        elm make src/Main.elm --output=./gh-pages/bundle.js
 
 
     - name: Optimize Javascript
