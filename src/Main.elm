@@ -8,9 +8,10 @@ import Dict
 import Html exposing (Html)
 import Html.Attributes
 import Http
-import IDE.UI.Html exposing (ResizeInfo)
-import IDE.UI.Tree
+import IDE.UI2.Html
+import IDE.UI2.Tree
 import RemoteStorage
+import Set
 import Task
 import Tiled
 import Tiled.Util as Util
@@ -44,7 +45,7 @@ subscriptions _ =
 update : Message -> Model -> ( Model, Cmd Message )
 update msg ({ editor } as model) =
     case ( msg, model.level ) of
-        ( UI (IDE.UI.Html.Custom msg2), Common.Succeed level ) ->
+        ( UI msg2, Common.Succeed level ) ->
             case msg2 of
                 PanelTiled.Editor fn ->
                     ( { model | editor = { editor | editor = fn editor.editor } }
@@ -77,18 +78,13 @@ update msg ({ editor } as model) =
                     , cmd
                     )
 
-        ( UI msg_, _ ) ->
-            ( { model | editor = { editor | ui2 = IDE.UI.Html.update msg_ editor.ui2 } }
-            , Cmd.none
-            )
-
         ( Resize w h, _ ) ->
-            let
-                ui2 =
-                    editor.ui2
-            in
             ( { model
-                | editor = { editor | ui2 = { ui2 | node = IDE.UI.Tree.setSize w h editor.ui2.node } }
+                | editor =
+                    { editor
+                        | ui3 = IDE.UI2.Tree.balance w h editor.ui3
+                    }
+                , size = { w = w, h = h }
               }
             , Cmd.none
             )
@@ -162,29 +158,27 @@ update msg ({ editor } as model) =
                 newEditor =
                     fn editor
 
-                level =
+                ( level, newCmds ) =
                     Dict.diff newEditor.files editor.files
                         |> Dict.foldl
-                            (\k v acc ->
+                            (\k v (( _, cmds ) as acc) ->
                                 case v of
                                     DropFiles.Level l ->
-                                        --let
-                                        --    _ =
-                                        --        Util.dependencies l
-                                        --            |> Debug.log "FromStore"
-                                        --in
-                                        Common.Succeed l
+                                        ( Common.Succeed l
+                                        , Set.diff (Util.dependencies l) (Dict.keys editor.files |> Set.fromList)
+                                            |> Set.foldl (RemoteStorage.getFile >> (::)) cmds
+                                        )
 
                                     _ ->
                                         acc
                             )
-                            current
+                            ( current, [] )
             in
             ( { model
                 | editor = newEditor
                 , level = level
               }
-            , Cmd.none
+            , Cmd.batch newCmds
             )
 
         _ ->
@@ -199,6 +193,7 @@ init _ =
     in
     ( { level = Common.Loading
       , editor = initEditor url
+      , size = { w = 200, h = 200 }
       }
     , [ getLevel url ] |> Cmd.batch
     )
@@ -206,28 +201,6 @@ init _ =
 
 initEditor url =
     let
-        topToolbar =
-            IDE.UI.Tree.node MainTools
-                |> IDE.UI.Tree.addEast (IDE.UI.Tree.node LayerTools)
-                |> IDE.UI.Tree.addEast (IDE.UI.Tree.node ObjectTools)
-
-        leftSide =
-            IDE.UI.Tree.node LevelProperties
-
-        rightSide =
-            IDE.UI.Tree.node Layers
-                |> IDE.UI.Tree.addSouth (IDE.UI.Tree.node Tilesets)
-
-        center =
-            IDE.UI.Tree.nodeWith 200 20 Render
-
-        newNode =
-            leftSide
-                |> IDE.UI.Tree.addEast center
-                |> IDE.UI.Tree.addEast rightSide
-                |> IDE.UI.Tree.addEast (IDE.UI.Tree.node FileManager)
-
-        --|> IDE.UI.Tree.addNorth topToolbar
         relUrl =
             String.split "/" url
                 |> List.reverse
@@ -235,11 +208,37 @@ initEditor url =
                 |> (::) ""
                 |> List.reverse
                 |> String.join "/"
+
+        -----------------------------------
+        topToolbar2 =
+            IDE.UI2.Tree.fromList ( PanelTiled.block.mainTools, [ PanelTiled.block.layerTools ] )
+
+        leftSide2 =
+            IDE.UI2.Tree.fromList ( PanelTiled.block.levelProperties, [ PanelTiled.block.properties ] )
+
+        center2 =
+            IDE.UI2.Tree.fromList ( PanelTiled.block.render, [ PanelTiled.block.fileManager ] )
+
+        rightSide2 =
+            IDE.UI2.Tree.fromList ( PanelTiled.block.layers, [ PanelTiled.block.tilesets ] )
+
+        mainStuff =
+            IDE.UI2.Tree.fromList ( leftSide2, [ center2, rightSide2 ] )
+
+        allTogether =
+            IDE.UI2.Tree.fromList ( topToolbar2, [ mainStuff ] )
+                |> IDE.UI2.Tree.mapAt [ 1, 0 ]
+                    (\i ->
+                        let
+                            _ =
+                                i
+                                    |> IDE.UI2.Tree.getLimitsV
+                                    |> Debug.log "getLimitsV"
+                        in
+                        i
+                    )
     in
-    { ui2 =
-        { node = newNode
-        , resizeInfo = Nothing
-        }
+    { ui3 = allTogether
     , relUrl = relUrl
     , editor = PanelTiled.init
     , files = Dict.empty
@@ -259,7 +258,7 @@ view : Model -> Html Message
 view model =
     case model.level of
         Common.Succeed level ->
-            [ IDE.UI.Html.view (PanelTiled.view model.editor level) model.editor.ui2
+            [ IDE.UI2.Html.view (PanelTiled.view model.editor level) model.size.w model.size.h model.editor.ui3
                 |> Html.map UI
             ]
                 |> Html.main_ [ Html.Attributes.map FilesDropped DropFiles.onDrop ]

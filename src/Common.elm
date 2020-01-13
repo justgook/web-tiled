@@ -2,7 +2,7 @@ module Common exposing (Editor, Level(..), Message(..), Model)
 
 import Dict exposing (Dict)
 import Http
-import IDE.UI.Html exposing (Message(..), ResizeInfo)
+import IDE.UI2.Tree
 import Task exposing (Task)
 import Tiled.Level
 import WebTiled.DropFiles exposing (DropInfo, File)
@@ -10,7 +10,7 @@ import WebTiled.PanelTiled as PanelTiled exposing (Kind(..))
 
 
 type Message
-    = UI (IDE.UI.Html.Message (PanelTiled.Message Message))
+    = UI (PanelTiled.Message Message)
     | Resize Int Int
     | Init (Result Http.Error Tiled.Level.Level)
     | FilesDropped (Task String (List DropInfo))
@@ -21,7 +21,7 @@ type Message
 
 
 type alias Editor =
-    { ui2 : IDE.UI.Html.Model PanelTiled.Kind
+    { ui3 : IDE.UI2.Tree.Tree PanelTiled.Kind
     , relUrl : String
     , editor : PanelTiled.Model
     , files : Dict String File
@@ -38,4 +38,5 @@ type Level
 type alias Model =
     { level : Level
     , editor : Editor
+    , size : { w : Int, h : Int }
     }

@@ -1,10 +1,10 @@
 module IDE.Internal.ManyAndNotempty exposing (toMany, toNonempty)
 
 import IDE.Internal.Many as Many exposing (Many)
-import IDE.Internal.Notempty as Nonempty exposing (Nonempty)
+import IDE.Internal.NotEmpty as Nonempty exposing (NotEmpty)
 
 
-toNonempty : Many a -> Nonempty a
+toNonempty : Many a -> NotEmpty a
 toNonempty many =
     let
         ( a, b ) =
@@ -17,7 +17,7 @@ toNonempty many =
     Nonempty.cons a rest
 
 
-toMany : Nonempty a -> Nonempty a -> Many a
+toMany : NotEmpty a -> NotEmpty a -> Many a
 toMany n1 n2 =
     let
         c1 =

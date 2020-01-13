@@ -1,9 +1,9 @@
-module WebTiled.PanelTiled exposing (Kind(..), Message(..), Model, init, view)
+module WebTiled.PanelTiled exposing (Kind(..), Message(..), Model, block, init, view)
 
 import Dict exposing (Dict)
 import Html exposing (Attribute, Html, a, button, div, h1, header, nav, span, text)
 import Html.Attributes exposing (class, style)
-import IDE.UI.Tree exposing (Height, Width)
+import IDE.UI2.Tree
 import Tiled.Layer as Layer
 import Tiled.Level as Tiled
 import Tiled.Util
@@ -24,6 +24,41 @@ type Kind
     | Tilesets
     | Render
     | FileManager
+
+
+block =
+    let
+        default =
+            { xMin = 11
+            , xMax = Nothing
+            , yMin = 12
+            , yMax = Nothing
+            }
+    in
+    { mainTools =
+        IDE.UI2.Tree.node MainTools
+            |> IDE.UI2.Tree.setLimits
+                { yMax = Just 34
+                , yMin = 34
+                , xMax = Just 222
+                , xMin = 220
+                }
+    , layerTools =
+        IDE.UI2.Tree.node LayerTools
+            |> IDE.UI2.Tree.setLimits
+                { yMax = Just 34
+                , yMin = 34
+                , xMax = Nothing
+                , xMin = 206
+                }
+    , objectTools = IDE.UI2.Tree.node ObjectTools |> IDE.UI2.Tree.setLimits { default | xMax = Just 250 }
+    , properties = IDE.UI2.Tree.node Properties |> IDE.UI2.Tree.setLimits { default | xMax = Just 250 }
+    , levelProperties = IDE.UI2.Tree.node LevelProperties |> IDE.UI2.Tree.setLimits { default | xMax = Just 250 }
+    , layers = IDE.UI2.Tree.node Layers |> IDE.UI2.Tree.setLimits { default | xMax = Just 250 }
+    , tilesets = IDE.UI2.Tree.node Tilesets |> IDE.UI2.Tree.setLimits { default | xMax = Just 250 }
+    , render = IDE.UI2.Tree.node Render |> IDE.UI2.Tree.setLimits default
+    , fileManager = IDE.UI2.Tree.node FileManager |> IDE.UI2.Tree.setLimits default
+    }
 
 
 type Message msg
@@ -54,8 +89,8 @@ init =
     }
 
 
-view { editor, relUrl, files, inStore } level w_ h_ m =
-    case m of
+view { editor, relUrl, files, inStore } level w_ h_ kind =
+    case kind of
         MainTools ->
             bare w_ h_ [ mainToolbar ]
                 |> Html.map Editor
@@ -127,14 +162,11 @@ panel w_ h_ title content =
         ]
 
 
-bare : Width -> Height -> List (Html msg) -> Html msg
 bare w_ h_ =
     let
-        setWidth : Width -> Attribute msg
         setWidth w =
             String.fromInt w ++ "px" |> style "width"
 
-        setHeight : Height -> Attribute msg
         setHeight w =
             String.fromInt w ++ "px" |> style "height"
     in

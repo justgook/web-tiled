@@ -1,12 +1,12 @@
-module IDE.Internal.Notempty exposing
-    ( Nonempty
-    , init
+module IDE.Internal.NotEmpty exposing
+    ( init
     , head, tail, toList, get
     , length, member
     , cons, append, pop, reverse, concat
     , map, indexedMap, map2, andMap, concatMap, updateAt
     , foldl
     , dedup, uniq
+    , NotEmpty
     )
 
 {-| A list that cannot be empty. The head and tail can be accessed without Maybes. Most other list functions are
@@ -84,27 +84,27 @@ The nonempty list's elements must support equality (e.g. not functions). Otherwi
 {-| The Nonempty type. If you have both a head and tail, you can construct a
 nonempty list directly. Otherwise use the helpers below instead.
 -}
-type alias Nonempty a =
+type alias NotEmpty a =
     ( a, List a )
 
 
 {-| Create a singleton list with the given element.
 -}
-init : a -> List a -> Nonempty a
+init : a -> List a -> NotEmpty a
 init a b =
     ( a, b )
 
 
 {-| Return the head of the list.
 -}
-head : Nonempty a -> a
+head : NotEmpty a -> a
 head ( x, xs ) =
     x
 
 
 {-| Return the tail of the list.
 -}
-tail : Nonempty a -> List a
+tail : NotEmpty a -> List a
 tail ( x, xs ) =
     xs
 
@@ -114,24 +114,24 @@ tail ( x, xs ) =
     foldl (++) "" (Nonempty "a" [ "b", "c" ]) --> "cba"
 
 -}
-foldl : (a -> b -> b) -> b -> Nonempty a -> b
+foldl : (a -> b -> b) -> b -> NotEmpty a -> b
 foldl f b ( x, xs ) =
     List.foldl f b (x :: xs)
 
 
 {-| Convert to an ordinary list.
 -}
-toList : Nonempty a -> List a
+toList : NotEmpty a -> List a
 toList ( x, xs ) =
     x :: xs
 
 
 {-| Reverse a nonempty list.
 -}
-reverse : Nonempty a -> Nonempty a
+reverse : NotEmpty a -> NotEmpty a
 reverse ( x, xs ) =
     let
-        revapp : ( List a, a, List a ) -> Nonempty a
+        revapp : ( List a, a, List a ) -> NotEmpty a
         revapp ( ls, c, rs ) =
             case rs of
                 [] ->
@@ -145,14 +145,14 @@ reverse ( x, xs ) =
 
 {-| Add another element as the head of the list, pushing the previous head to the tail.
 -}
-cons : a -> Nonempty a -> Nonempty a
+cons : a -> NotEmpty a -> NotEmpty a
 cons y ( x, xs ) =
     ( y, x :: xs )
 
 
 {-| Append two nonempty lists together. `(++)` is _not_ supported.
 -}
-append : Nonempty a -> Nonempty a -> Nonempty a
+append : NotEmpty a -> NotEmpty a -> NotEmpty a
 append ( x, xs ) ( y, ys ) =
     ( x, xs ++ y :: ys )
 
@@ -164,7 +164,7 @@ want to exhaust a list but hang on to the last item indefinitely.
      pop (Nonempty 1 []) --> Nonempty 1 []
 
 -}
-pop : Nonempty a -> Nonempty a
+pop : NotEmpty a -> NotEmpty a
 pop ( x, xs ) =
     case xs of
         [] ->
@@ -176,7 +176,7 @@ pop ( x, xs ) =
 
 {-| Flatten a nonempty list of nonempty lists into a single nonempty list.
 -}
-concat : Nonempty (Nonempty a) -> Nonempty a
+concat : NotEmpty (NotEmpty a) -> NotEmpty a
 concat ( xs, xss ) =
     let
         hd =
@@ -193,10 +193,10 @@ concat ( xs, xss ) =
      dedup (Nonempty 1 [ 2, 2, 1 ]) --> Nonempty 1 [2, 1]
 
 -}
-dedup : Nonempty a -> Nonempty a
+dedup : NotEmpty a -> NotEmpty a
 dedup ( x, xs ) =
     let
-        dedupe : a -> List a -> List a -> Nonempty a
+        dedupe : a -> List a -> List a -> NotEmpty a
         dedupe prev done next =
             case next of
                 [] ->
@@ -217,10 +217,10 @@ dedup ( x, xs ) =
      uniq (Nonempty 1 [ 2, 2, 1 ]) --> Nonempty 1 [2]
 
 -}
-uniq : Nonempty a -> Nonempty a
+uniq : NotEmpty a -> NotEmpty a
 uniq ( x, xs ) =
     let
-        unique : List a -> Nonempty a -> List a -> Nonempty a
+        unique : List a -> NotEmpty a -> List a -> NotEmpty a
         unique seen done next =
             case next of
                 [] ->
@@ -238,21 +238,21 @@ uniq ( x, xs ) =
 
 {-| Find the length of the nonempty list.
 -}
-length : Nonempty a -> Int
+length : NotEmpty a -> Int
 length ( _, xs ) =
     List.length xs + 1
 
 
 {-| Determine if an element is present in the nonempty list.
 -}
-member : a -> Nonempty a -> Bool
+member : a -> NotEmpty a -> Bool
 member y ( x, xs ) =
     x == y || List.member y xs
 
 
 {-| Returns `Just` the element at the given index in the list, or `Nothing` if the index is out of range.
 -}
-get : Int -> Nonempty a -> Maybe a
+get : Int -> NotEmpty a -> Maybe a
 get i ( x, xs ) =
     if i < 0 then
         Nothing
@@ -268,14 +268,14 @@ get i ( x, xs ) =
 
 {-| Map a function over a nonempty list.
 -}
-map : (a -> b) -> Nonempty a -> Nonempty b
+map : (a -> b) -> NotEmpty a -> NotEmpty b
 map f ( x, xs ) =
     ( f x, List.map f xs )
 
 
 {-| Map a function over two nonempty lists.
 -}
-map2 : (a -> b -> c) -> Nonempty a -> Nonempty b -> Nonempty c
+map2 : (a -> b -> c) -> NotEmpty a -> NotEmpty b -> NotEmpty c
 map2 f ( x, xs ) ( y, ys ) =
     ( f x y, List.map2 f xs ys )
 
@@ -284,7 +284,7 @@ map2 f ( x, xs ) ( y, ys ) =
 map2 (,) xs ys == map (,) xs |> andMap ys
 head (map (,,) xs |> andMap ys |> andMap zs) == ( head xs, head ys, head zs )
 -}
-andMap : Nonempty a -> Nonempty (a -> b) -> Nonempty b
+andMap : NotEmpty a -> NotEmpty (a -> b) -> NotEmpty b
 andMap =
     map2 (|>)
 
@@ -292,14 +292,14 @@ andMap =
 {-| Map a given function onto a nonempty list and flatten the resulting nonempty lists. If you're chaining, you can
 define `andThen = flip concatMap`.
 -}
-concatMap : (a -> Nonempty b) -> Nonempty a -> Nonempty b
+concatMap : (a -> NotEmpty b) -> NotEmpty a -> NotEmpty b
 concatMap f xs =
     concat (map f xs)
 
 
 {-| Same as `map` but the function is also applied to the index of each element (starting at zero).
 -}
-indexedMap : (Int -> a -> b) -> Nonempty a -> Nonempty b
+indexedMap : (Int -> a -> b) -> NotEmpty a -> NotEmpty b
 indexedMap f ( x, xs ) =
     let
         wrapped i d =
@@ -313,7 +313,7 @@ updateAt 0 ((+) 1) [ 1, 2, 3 ]
 --> [ 2, 2, 3 ]
 See also `updateIfIndex`.
 -}
-updateAt : Int -> (a -> a) -> Nonempty a -> Nonempty a
+updateAt : Int -> (a -> a) -> NotEmpty a -> NotEmpty a
 updateAt index fn ( x, xs ) =
     if index < 0 then
         ( x, xs )
