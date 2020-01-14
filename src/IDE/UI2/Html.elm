@@ -6,30 +6,14 @@ import IDE.Internal.Many as Many exposing (Many)
 import IDE.UI2.Tree exposing (Tree(..))
 
 
-css =
-    """
-.vPanel {
-    float:left;
-    position:relative;
-}
-
-.hPanel {
-    float:left;
-    position:relative;
-}
-
-.content {
-    float:left;
-    position:relative;
-}
-
-"""
-
-
+view : (Int -> Int -> panel -> Html msg) -> Int -> Int -> Tree panel -> List (Html msg)
 view fn w h m =
     viewV fn w h m
         |> (::) (Html.node "style" [] [ text css ])
-        |> div []
+
+
+modal fn w h m =
+    div [ class "modal" ] []
 
 
 viewH fn w h_ m =
@@ -94,12 +78,6 @@ flip fn a b =
     fn b a
 
 
-debugStyle =
-    [ style "border " "2px solid blue"
-    , style "box-sizing" "border-box"
-    ]
-
-
 px : Int -> String
 px i =
     String.fromInt i ++ "px"
@@ -107,3 +85,23 @@ px i =
 
 apply p h =
     h |> toFloat |> (*) p |> floor
+
+
+css =
+    """
+.vPanel {
+    float:left;
+    position:relative;
+}
+
+.hPanel {
+    float:left;
+    position:relative;
+}
+
+.content {
+    float:left;
+    position:relative;
+}
+
+"""

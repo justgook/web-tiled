@@ -12,6 +12,7 @@ import WebTiled.PanelTiled.LevelProperties as LevelPropertiesPanel
 import WebTiled.PanelTiled.Properties exposing (propertiesTable)
 import WebTiled.PanelTiled.Render as RenderPanel
 import WebTiled.PanelTiled.Tileset as TilesetPanel
+import WebTiled.PanelTiled.TopMenu as TopMenu
 
 
 type Kind
@@ -24,6 +25,7 @@ type Kind
     | Tilesets
     | Render
     | FileManager
+    | TopMenu
 
 
 block =
@@ -58,6 +60,7 @@ block =
     , tilesets = IDE.UI2.Tree.node Tilesets |> IDE.UI2.Tree.setLimits { default | xMax = Just 250 }
     , render = IDE.UI2.Tree.node Render |> IDE.UI2.Tree.setLimits { default | xMin = 200 }
     , fileManager = IDE.UI2.Tree.node FileManager |> IDE.UI2.Tree.setLimits default
+    , topMenu = IDE.UI2.Tree.node TopMenu |> IDE.UI2.Tree.setLimits { default | yMin = 22, yMax = Just 22 }
     }
 
 
@@ -72,9 +75,8 @@ type alias Model =
     { render : RenderPanel.Model
     , tilesets : TilesetPanel.Model
     , fileManager : FileManager.Model
-    , widgetCache :
-        { number : Dict String String
-        }
+    , topMenu : TopMenu.Model
+    , widgetCache : { number : Dict String String }
     }
 
 
@@ -83,9 +85,8 @@ init =
     { render = RenderPanel.init
     , tilesets = TilesetPanel.init
     , fileManager = FileManager.init
-    , widgetCache =
-        { number = Dict.empty
-        }
+    , topMenu = TopMenu.init
+    , widgetCache = { number = Dict.empty }
     }
 
 
@@ -113,7 +114,7 @@ view { editor, relUrl, files, inStore } level w_ h_ kind =
                 |> Html.map Editor
 
         Layers ->
-            bare w_ h_ (layers (Tiled.Util.getLevelData level).layers)
+            panel w_ h_ "Layers" (layers (Tiled.Util.getLevelData level).layers)
                 |> Html.map Editor
 
         Tilesets ->
@@ -127,7 +128,7 @@ view { editor, relUrl, files, inStore } level w_ h_ kind =
             [ RenderPanel.view editor.render level
                 |> Html.map (\fn model -> { model | render = fn model.render })
             ]
-                |> panel w_ h_ "Render"
+                |> bare w_ h_
                 |> Html.map Editor
 
         FileManager ->
@@ -143,6 +144,9 @@ view { editor, relUrl, files, inStore } level w_ h_ kind =
             ]
                 |> panel w_ h_ "File Manager"
                 |> Html.map EditorCmd
+
+        TopMenu ->
+            TopMenu.view editor.topMenu
 
 
 panel w_ h_ title content =
@@ -227,11 +231,7 @@ layerToolbar =
 
 
 layers l =
-    [ header [ class "toolbar toolbar-header" ]
-        [ h1 [ class "title" ]
-            [ text "Layers" ]
-        ]
-    , nav [ class "nav-group" ]
+    [ nav [ class "nav-group sidebar" ]
         (List.map
             (\layer ->
                 case layer of

@@ -5,6 +5,7 @@ import Browser.Dom as Browser
 import Browser.Events
 import Common exposing (Editor, Message(..), Model)
 import Dict
+import Generic.TopMenu
 import Html exposing (Html)
 import Html.Attributes
 import Http
@@ -209,7 +210,9 @@ initEditor url =
                 |> List.reverse
                 |> String.join "/"
 
-        -----------------------------------
+        topMenu =
+            PanelTiled.block.topMenu
+
         topToolbar2 =
             IDE.UI2.Tree.fromList ( PanelTiled.block.mainTools, [ PanelTiled.block.layerTools ] )
 
@@ -226,7 +229,7 @@ initEditor url =
             IDE.UI2.Tree.fromList ( leftSide2, [ center2, PanelTiled.block.fileManager, rightSide2 ] )
 
         allTogether =
-            IDE.UI2.Tree.fromList ( topToolbar2, [ mainStuff ] )
+            IDE.UI2.Tree.fromList ( topMenu, [ topToolbar2, mainStuff ] )
     in
     { ui3 = allTogether
     , relUrl = relUrl
@@ -248,9 +251,8 @@ view : Model -> Html Message
 view model =
     case model.level of
         Common.Succeed level ->
-            [ IDE.UI2.Html.view (PanelTiled.view model.editor level) model.size.w model.size.h model.editor.ui3
-                |> Html.map UI
-            ]
+            IDE.UI2.Html.view (PanelTiled.view model.editor level) model.size.w model.size.h model.editor.ui3
+                |> List.map (Html.map UI)
                 |> Html.main_ [ Html.Attributes.map FilesDropped DropFiles.onDrop ]
 
         Common.Loading ->

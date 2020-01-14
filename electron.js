@@ -1,5 +1,5 @@
-const { app, BrowserWindow } = require("electron");
-
+const { app, BrowserWindow, Menu } = require("electron");
+const isMac = process.platform === 'darwin';
 // Keep a global reference of the window object, if you don"t, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let win;
@@ -13,6 +13,21 @@ function createWindow() {
             nodeIntegration: true
         }
     });
+    const template = [
+        ...(isMac ? [{
+            label: app.name,
+            submenu: [{ role: 'quit' }]
+        }] : []),
+        {
+            label: 'File',
+            submenu: [
+                isMac ? { role: 'close' } : { role: 'quit' }
+            ]
+        },
+    ];
+
+    const menu = Menu.buildFromTemplate(template);
+    Menu.setApplicationMenu(menu);
 
     // and load the index.html of the app.
     win.loadFile("gh-pages/index.html");
@@ -38,7 +53,7 @@ app.on("ready", createWindow)
 app.on("window-all-closed", () => {
     // On macOS it is common for applications and their menu bar
     // to stay active until the user quits explicitly with Cmd + Q
-    if (process.platform !== "darwin") {
+    if (!isMac) {
         app.quit()
     }
 });

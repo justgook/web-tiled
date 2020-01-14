@@ -47,13 +47,23 @@ mapAt path fn tree =
 
 balance : Int -> Int -> Tree panel -> Tree panel
 balance w h =
-    balance_ ( getLimitsV, .xMax, w ) ( getLimitsH, .yMax, h )
+    balance_
+        { getLimit = getLimitsV
+        , getMax = .xMax
+        , getMix = .xMin
+        , value = w
+        }
+        { getLimit = getLimitsH
+        , getMax = .yMax
+        , getMix = .yMin
+        , value = h
+        }
 
 
-balance_ ( fn11, fn12, w ) ( fn21, fn22, h ) tree =
+balance_ a b tree =
     let
         limit =
-            fn11 tree
+            a.getLimit tree
     in
     case tree of
         Branch p childs ->
@@ -61,8 +71,8 @@ balance_ ( fn11, fn12, w ) ( fn21, fn22, h ) tree =
                 |> Many.map
                     (\i ->
                         balance_
-                            ( fn21, fn22, fn22 limit |> Maybe.withDefault h )
-                            ( fn11, fn12, fn12 limit |> Maybe.withDefault w )
+                            { b | value = b.getMax limit |> Maybe.withDefault b.value }
+                            { a | value = a.getMax limit |> Maybe.withDefault a.value }
                             i
                     )
                 |> (\newChilds ->
@@ -75,7 +85,7 @@ balance_ ( fn11, fn12, w ) ( fn21, fn22, h ) tree =
                                     newChilds
                                         |> Many.foldl
                                             (\i ( taken, count ) ->
-                                                if fn21 i |> fn22 |> (/=) Nothing then
+                                                if b.getLimit i |> b.getMax |> (/=) Nothing then
                                                     ( taken - size i, count )
 
                                                 else
@@ -89,21 +99,21 @@ balance_ ( fn11, fn12, w ) ( fn21, fn22, h ) tree =
                             newChilds
                                 |> Many.map
                                     (\i ->
-                                        if fn21 i |> fn22 |> (/=) Nothing then
+                                        if b.getLimit i |> b.getMax |> (/=) Nothing then
                                             i
 
                                         else
                                             mapSize ((*) newSize) i
                                     )
                    )
-                |> (fn12 limit
-                        |> Maybe.map (\value -> Branch (toFloat value / toFloat w))
+                |> (a.getMax limit
+                        |> Maybe.map (\value -> Branch (toFloat value / toFloat a.value))
                         |> Maybe.withDefault (Branch p)
                    )
 
-        Leaf p l panel ->
-            fn12 limit
-                |> Maybe.map (\value -> Leaf (toFloat value / toFloat w) l panel)
+        Leaf _ l panel ->
+            a.getMax limit
+                |> Maybe.map (\value -> Leaf (toFloat value / toFloat a.value) l panel)
                 |> Maybe.withDefault tree
 
 
