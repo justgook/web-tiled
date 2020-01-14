@@ -3,6 +3,7 @@ module IDE.UI2.Tree exposing
     , Size
     , Tree(..)
     , balance
+    , defaultLimits
     , fromList
     , getLimitsH
     , getLimitsV
@@ -46,7 +47,7 @@ mapAt path fn tree =
 
 balance : Int -> Int -> Tree panel -> Tree panel
 balance w h =
-    balance_ ( getLimitsH, .xMax, w ) ( getLimitsV, .yMax, h )
+    balance_ ( getLimitsV, .xMax, w ) ( getLimitsH, .yMax, h )
 
 
 balance_ ( fn11, fn12, w ) ( fn21, fn22, h ) tree =
@@ -122,28 +123,38 @@ setLimits limit item =
 
 
 getLimitsH tree =
-    { xMin = 0, xMax = Just 0, yMin = 0, yMax = Just 0 }
-        |> calcLimit verticalLimit horizontalLimit tree
+    { xMin = 0, xMax = Nothing, yMin = 0, yMax = Just 0 }
+        |> calcLimit
+            verticalLimit
+            horizontalLimit
+            { xMin = 0, xMax = Nothing, yMin = 0, yMax = Just 0 }
+            { xMin = 0, xMax = Just 0, yMin = 0, yMax = Nothing }
+            tree
 
 
 getLimitsV tree =
-    { xMin = 0, xMax = Just 0, yMin = 0, yMax = Just 0 }
-        |> calcLimit horizontalLimit verticalLimit tree
+    { xMin = 0, xMax = Just 0, yMin = 0, yMax = Nothing }
+        |> calcLimit
+            horizontalLimit
+            verticalLimit
+            { xMin = 0, xMax = Just 0, yMin = 0, yMax = Nothing }
+            { xMin = 0, xMax = Nothing, yMin = 0, yMax = Just 0 }
+            tree
 
 
-calcLimit fn1 fn2 tree was =
+calcLimit fn1 fn2 init1 init2 tree was =
     case tree of
         Leaf _ limit _ ->
-            fn1 limit was
+            fn1 was limit
 
         Branch _ childs ->
-            Many.foldl (calcLimit fn1 fn2) { xMin = 0, xMax = Just 0, yMin = 0, yMax = Just 0 } childs
-                |> fn2 was
+            Many.foldl (calcLimit fn2 fn1 init2 init1) init2 childs
+                |> fn1 was
 
 
 verticalLimit a b =
     { xMin = max a.xMin b.xMin
-    , xMax = Maybe.map2 max a.xMax b.xMax
+    , xMax = maybeDo2 min a.xMax b.xMax
     , yMin = a.yMin + b.yMin
     , yMax = Maybe.map2 (+) a.yMax b.yMax
     }
@@ -153,16 +164,12 @@ horizontalLimit a b =
     { xMin = a.xMin + b.xMin
     , xMax = Maybe.map2 (+) a.xMax b.xMax
     , yMin = max a.yMin b.yMin
-    , yMax = Maybe.map2 max a.yMax b.yMax
+    , yMax = maybeDo2 min a.yMax b.yMax
     }
 
 
 defaultLimits =
-    { xMin = 10
-    , xMax = Nothing
-    , yMin = 10
-    , yMax = Nothing
-    }
+    { xMin = 0, xMax = Nothing, yMin = 0, yMax = Nothing }
 
 
 fromList : NotEmpty (Tree panel) -> Tree panel
@@ -197,10 +204,10 @@ mapSize fn item =
 size : Tree panel -> Size
 size item =
     case item of
-        Branch p childs ->
+        Branch p _ ->
             p
 
-        Leaf p limit1 panel ->
+        Leaf p _ _ ->
             p
 
 

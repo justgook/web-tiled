@@ -48,13 +48,13 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-node_modules-
 
-#    - name: Install elm-test
-#      run: yarn global add elm-test@0.19.1-revision2
+    - name: Install elm-test
+      run: yarn global add elm-test@0.19.1-revision2
 
-#    - name: Test
-#      env:
-#        ELM_HOME: ${{ steps.elm-home.outputs.dir }}
-#      run: elm-test
+    - name: Test
+      env:
+        ELM_HOME: ${{ steps.elm-home.outputs.dir }}
+      run: elm-test
 
     - name: Install Dependencies
       #if: steps.yarn-cache-exists.outputs.cache-hit != 'true'
@@ -64,7 +64,7 @@ jobs:
 
     - name: Build
       run: |
-        elm make src/Main.elm --output=./gh-pages/bundle.js
+        elm make src/Main.elm --optimize --output=./gh-pages/bundle.js
 
 
     - name: Optimize Javascript

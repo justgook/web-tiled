@@ -9,7 +9,7 @@ import Html exposing (Html)
 import Html.Attributes
 import Http
 import IDE.UI2.Html
-import IDE.UI2.Tree
+import IDE.UI2.Tree exposing (getLimitsV)
 import RemoteStorage
 import Set
 import Task
@@ -217,26 +217,16 @@ initEditor url =
             IDE.UI2.Tree.fromList ( PanelTiled.block.levelProperties, [ PanelTiled.block.properties ] )
 
         center2 =
-            IDE.UI2.Tree.fromList ( PanelTiled.block.render, [ PanelTiled.block.fileManager ] )
+            IDE.UI2.Tree.fromList ( PanelTiled.block.render, [] )
 
         rightSide2 =
             IDE.UI2.Tree.fromList ( PanelTiled.block.layers, [ PanelTiled.block.tilesets ] )
 
         mainStuff =
-            IDE.UI2.Tree.fromList ( leftSide2, [ center2, rightSide2 ] )
+            IDE.UI2.Tree.fromList ( leftSide2, [ center2, PanelTiled.block.fileManager, rightSide2 ] )
 
         allTogether =
             IDE.UI2.Tree.fromList ( topToolbar2, [ mainStuff ] )
-                |> IDE.UI2.Tree.mapAt [ 1, 0 ]
-                    (\i ->
-                        let
-                            _ =
-                                i
-                                    |> IDE.UI2.Tree.getLimitsV
-                                    |> Debug.log "getLimitsV"
-                        in
-                        i
-                    )
     in
     { ui3 = allTogether
     , relUrl = relUrl

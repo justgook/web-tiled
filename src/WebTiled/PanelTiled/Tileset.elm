@@ -113,7 +113,8 @@ tilesetsTabsWrap activeTab t =
         |> (\a -> a ++ [ pluss ])
         |> div
             [ class "tab-group"
-            , style "overflow-x" "scroll"
+
+            --, style "overflow-x" "scroll"
             , style "max-width" "100%"
             ]
 

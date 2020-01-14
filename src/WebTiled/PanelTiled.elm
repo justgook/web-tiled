@@ -29,9 +29,9 @@ type Kind
 block =
     let
         default =
-            { xMin = 11
+            { xMin = 10
             , xMax = Nothing
-            , yMin = 12
+            , yMin = 10
             , yMax = Nothing
             }
     in
@@ -52,11 +52,11 @@ block =
                 , xMin = 206
                 }
     , objectTools = IDE.UI2.Tree.node ObjectTools |> IDE.UI2.Tree.setLimits { default | xMax = Just 250 }
-    , properties = IDE.UI2.Tree.node Properties |> IDE.UI2.Tree.setLimits { default | xMax = Just 250 }
+    , properties = IDE.UI2.Tree.node Properties |> IDE.UI2.Tree.setLimits { default | xMax = Just 230 }
     , levelProperties = IDE.UI2.Tree.node LevelProperties |> IDE.UI2.Tree.setLimits { default | xMax = Just 250 }
     , layers = IDE.UI2.Tree.node Layers |> IDE.UI2.Tree.setLimits { default | xMax = Just 250 }
     , tilesets = IDE.UI2.Tree.node Tilesets |> IDE.UI2.Tree.setLimits { default | xMax = Just 250 }
-    , render = IDE.UI2.Tree.node Render |> IDE.UI2.Tree.setLimits default
+    , render = IDE.UI2.Tree.node Render |> IDE.UI2.Tree.setLimits { default | xMin = 200 }
     , fileManager = IDE.UI2.Tree.node FileManager |> IDE.UI2.Tree.setLimits default
     }
 
