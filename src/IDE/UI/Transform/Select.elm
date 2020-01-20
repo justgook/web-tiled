@@ -18,6 +18,7 @@ type alias Select a =
     }
 
 
+select : Select a -> Html.Html (Select a -> Select a)
 select m_ =
     m_.select
         |> Maybe.map

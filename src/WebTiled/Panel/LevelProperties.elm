@@ -1,4 +1,4 @@
-module WebTiled.PanelTiled.LevelProperties exposing (view)
+module WebTiled.Panel.LevelProperties exposing (view)
 
 import Dict
 import Html exposing (td, text, tr)
@@ -7,7 +7,7 @@ import IDE.UI.Widget as Widget
 import Tiled.Level as Tiled
 import Tiled.Properties exposing (Properties, Property(..))
 import Tiled.Util
-import WebTiled.PanelTiled.Properties exposing (customProps, propertiesTable, propertyRow)
+import WebTiled.Panel.Properties exposing (customProps, propertiesTable, propertyRow)
 
 
 view widgetCache level =

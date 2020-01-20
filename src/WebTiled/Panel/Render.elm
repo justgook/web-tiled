@@ -1,4 +1,4 @@
-module WebTiled.PanelTiled.Render exposing (Model, init, view)
+module WebTiled.Panel.Render exposing (Model, init, view)
 
 import Html
 import Html.Attributes as Html

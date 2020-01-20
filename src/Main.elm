@@ -3,39 +3,40 @@ module Main exposing (main)
 import Browser
 import Browser.Dom as Browser
 import Browser.Events
-import Common exposing (Editor, Message(..), Model)
 import Dict
-import Generic.TopMenu
 import Html exposing (Html)
-import Html.Attributes
+import Html.Attributes exposing (style)
+import Html.Events
 import Http
-import IDE.UI2.Html
-import IDE.UI2.Tree exposing (getLimitsV)
+import IDE.UI.Hotkey as Hotkey
+import IDE.UI.Html
+import IDE.UI.Tree as UI exposing (Tree)
+import Init exposing (Editor, Level, Model, initEditor)
+import Json.Decode as D
+import Message exposing (Message(..))
 import RemoteStorage
 import Set
 import Task
 import Tiled
 import Tiled.Util as Util
 import WebTiled.DropFiles as DropFiles
-import WebTiled.PanelTiled as PanelTiled exposing (Kind(..))
+import WebTiled.Kind exposing (Kind)
+import WebTiled.Panel as PanelTiled
+import WebTiled.Panel2 as Panel2
 
 
-main : Program () Model Message
+main : Program D.Value (Model Message) Message
 main =
     Browser.document
         { init = init
-        , view =
-            \model ->
-                { title = "WebTiled Editor"
-                , body = [ view model ]
-                }
+        , view = \model -> { title = "WebTiled Editor", body = [ view model ] }
         , update = update
         , subscriptions = subscriptions
         }
 
 
-subscriptions : Model -> Sub Message
-subscriptions _ =
+subscriptions : Model Message -> Sub Message
+subscriptions model =
     [ Browser.Events.onResize Resize
     , RemoteStorage.subscriptions
         |> Sub.map (Result.map FromStore >> Result.withDefault FromStoreUnknown)
@@ -43,10 +44,13 @@ subscriptions _ =
         |> Sub.batch
 
 
-update : Message -> Model -> ( Model, Cmd Message )
+update : Message -> Model Message -> ( Model Message, Cmd Message )
 update msg ({ editor } as model) =
     case ( msg, model.level ) of
-        ( UI msg2, Common.Succeed level ) ->
+        ( UI2 msg_, _ ) ->
+            Panel2.update msg_ model
+
+        ( UI msg2, Init.Succeed level ) ->
             case msg2 of
                 PanelTiled.Editor fn ->
                     ( { model | editor = { editor | editor = fn editor.editor } }
@@ -54,7 +58,7 @@ update msg ({ editor } as model) =
                     )
 
                 PanelTiled.Level fn ->
-                    ( { model | level = Common.Succeed (fn level) }
+                    ( { model | level = Init.Succeed (fn level) }
                     , Cmd.none
                     )
 
@@ -64,7 +68,7 @@ update msg ({ editor } as model) =
                             fn editor.editor level
                     in
                     ( { model
-                        | level = Common.Succeed newLevel
+                        | level = Init.Succeed newLevel
                         , editor = { editor | editor = newEditor }
                       }
                     , Cmd.none
@@ -83,7 +87,7 @@ update msg ({ editor } as model) =
             ( { model
                 | editor =
                     { editor
-                        | ui3 = IDE.UI2.Tree.balance w h editor.ui3
+                        | ui = UI.balance w h editor.ui
                     }
                 , size = { w = w, h = h }
               }
@@ -95,10 +99,10 @@ update msg ({ editor } as model) =
                 level =
                     case gotLevel of
                         Ok level_ ->
-                            Common.Succeed level_
+                            Init.Succeed level_
 
                         Err _ ->
-                            Common.Fail "HTTP ERROR"
+                            Init.Fail "HTTP ERROR"
             in
             ( { model | level = level }
             , [ RemoteStorage.getFiles
@@ -119,7 +123,7 @@ update msg ({ editor } as model) =
                             case file of
                                 ( name, (DropFiles.Level l) as value, source ) ->
                                     ( Dict.insert name value files
-                                    , Common.Succeed l
+                                    , Init.Succeed l
                                     , RemoteStorage.storeFile "application/tiled.level-json" name source :: cmd
                                     )
 
@@ -165,7 +169,7 @@ update msg ({ editor } as model) =
                             (\k v (( _, cmds ) as acc) ->
                                 case v of
                                     DropFiles.Level l ->
-                                        ( Common.Succeed l
+                                        ( Init.Succeed l
                                         , Set.diff (Util.dependencies l) (Dict.keys editor.files |> Set.fromList)
                                             |> Set.foldl (RemoteStorage.getFile >> (::)) cmds
                                         )
@@ -186,57 +190,23 @@ update msg ({ editor } as model) =
             ( model, Cmd.none )
 
 
-init : a -> ( Model, Cmd Message )
+init : D.Value -> ( Model Message, Cmd Message )
 init _ =
     let
         url =
             "top-down-adventure/demo.json"
+
+        ui2 =
+            Panel2.preferences
     in
-    ( { level = Common.Loading
+    ( { level = Init.Loading
       , editor = initEditor url
       , size = { w = 200, h = 200 }
+      , ui2 = ui2
+      , state = Panel2.init
       }
     , [ getLevel url ] |> Cmd.batch
     )
-
-
-initEditor url =
-    let
-        relUrl =
-            String.split "/" url
-                |> List.reverse
-                |> List.drop 1
-                |> (::) ""
-                |> List.reverse
-                |> String.join "/"
-
-        topMenu =
-            PanelTiled.block.topMenu
-
-        topToolbar2 =
-            IDE.UI2.Tree.fromList ( PanelTiled.block.mainTools, [ PanelTiled.block.layerTools ] )
-
-        leftSide2 =
-            IDE.UI2.Tree.fromList ( PanelTiled.block.levelProperties, [ PanelTiled.block.properties ] )
-
-        center2 =
-            IDE.UI2.Tree.fromList ( PanelTiled.block.render, [] )
-
-        rightSide2 =
-            IDE.UI2.Tree.fromList ( PanelTiled.block.layers, [ PanelTiled.block.tilesets ] )
-
-        mainStuff =
-            IDE.UI2.Tree.fromList ( leftSide2, [ center2, PanelTiled.block.fileManager, rightSide2 ] )
-
-        allTogether =
-            IDE.UI2.Tree.fromList ( topMenu, [ topToolbar2, mainStuff ] )
-    in
-    { ui3 = allTogether
-    , relUrl = relUrl
-    , editor = PanelTiled.init
-    , files = Dict.empty
-    , inStore = Dict.empty
-    }
 
 
 getLevel : String -> Cmd Message
@@ -247,16 +217,32 @@ getLevel url =
         }
 
 
-view : Model -> Html Message
+view : Model Message -> Html Message
 view model =
     case model.level of
-        Common.Succeed level ->
-            IDE.UI2.Html.view (PanelTiled.view model.editor level) model.size.w model.size.h model.editor.ui3
+        Init.Succeed level ->
+            IDE.UI.Html.view (PanelTiled.view model.editor level) model.size.w model.size.h model.editor.ui
+                |> (Maybe.map
+                        (\modal rest ->
+                            rest
+                                ++ IDE.UI.Html.modal
+                                    (PanelTiled.view model.editor level)
+                                    model.size.w
+                                    model.size.h
+                                    modal
+                        )
+                        model.editor.modal
+                        |> Maybe.withDefault identity
+                   )
                 |> List.map (Html.map UI)
-                |> Html.main_ [ Html.Attributes.map FilesDropped DropFiles.onDrop ]
+                |> Html.main_
+                    [ Html.Attributes.map FilesDropped DropFiles.onDrop
+                    , Html.Attributes.tabindex -1
+                    , Html.Events.preventDefaultOn "keydown" (Hotkey.decode model.editor.hotkey |> D.map (\m -> ( m, True )))
+                    ]
 
-        Common.Loading ->
-            Html.span [] [ Html.text "Loading .." ]
+        Init.Loading ->
+            Html.span [ style "font-size" "10em" ] [ Html.text "Loading..." ]
 
-        Common.Fail err ->
+        Init.Fail err ->
             Html.span [] [ Html.text <| "FAIL:" ++ err ]

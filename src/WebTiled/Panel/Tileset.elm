@@ -1,4 +1,4 @@
-module WebTiled.PanelTiled.Tileset exposing (Model, init, view)
+module WebTiled.Panel.Tileset exposing (Model, init, view)
 
 import Dict exposing (Dict)
 import Html exposing (Html, div, span, text)

@@ -1,4 +1,4 @@
-module WebTiled.PanelTiled.Properties exposing (customProps, propertiesTable, propertyRow)
+module WebTiled.Panel.Properties exposing (customProps, propertiesTable, propertyRow)
 
 import Dict
 import Html exposing (Attribute, Html, input, table, tbody, td, text, th, thead, tr)

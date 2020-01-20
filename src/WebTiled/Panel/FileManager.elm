@@ -1,4 +1,4 @@
-module WebTiled.PanelTiled.FileManager exposing (Model, init, view)
+module WebTiled.Panel.FileManager exposing (Model, init, view)
 
 import Dict exposing (Dict)
 import Html exposing (..)

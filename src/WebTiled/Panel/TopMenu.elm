@@ -1,4 +1,4 @@
-module WebTiled.PanelTiled.TopMenu exposing (Model, init, view)
+module WebTiled.Panel.TopMenu exposing (Model, init, view)
 
 import Generic.TopMenu exposing (MenuItem(..))
 

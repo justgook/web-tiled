@@ -1,31 +1,20 @@
-module WebTiled.PanelTiled exposing (Kind(..), Message(..), Model, block, init, view)
+module WebTiled.Panel exposing (Message(..), Model, block, init, view)
 
 import Dict exposing (Dict)
 import Html exposing (Attribute, Html, a, button, div, h1, header, nav, span, text)
 import Html.Attributes exposing (class, style)
-import IDE.UI2.Tree
+import IDE.UI.Tree as UI
 import Tiled.Layer as Layer
 import Tiled.Level as Tiled
 import Tiled.Util
-import WebTiled.PanelTiled.FileManager as FileManager
-import WebTiled.PanelTiled.LevelProperties as LevelPropertiesPanel
-import WebTiled.PanelTiled.Properties exposing (propertiesTable)
-import WebTiled.PanelTiled.Render as RenderPanel
-import WebTiled.PanelTiled.Tileset as TilesetPanel
-import WebTiled.PanelTiled.TopMenu as TopMenu
-
-
-type Kind
-    = MainTools
-    | LayerTools
-    | ObjectTools
-    | Properties
-    | LevelProperties
-    | Layers
-    | Tilesets
-    | Render
-    | FileManager
-    | TopMenu
+import WebTiled.Kind exposing (Kind(..))
+import WebTiled.Panel.FileManager as FileManager
+import WebTiled.Panel.LevelProperties as LevelPropertiesPanel
+import WebTiled.Panel.Preferences as Preferences
+import WebTiled.Panel.Properties exposing (propertiesTable)
+import WebTiled.Panel.Render as RenderPanel
+import WebTiled.Panel.Tileset as TilesetPanel
+import WebTiled.Panel.TopMenu as TopMenu
 
 
 block =
@@ -38,29 +27,30 @@ block =
             }
     in
     { mainTools =
-        IDE.UI2.Tree.node MainTools
-            |> IDE.UI2.Tree.setLimits
+        UI.node MainTools
+            |> UI.setLimits
                 { yMax = Just 34
                 , yMin = 34
                 , xMax = Just 222
                 , xMin = 220
                 }
     , layerTools =
-        IDE.UI2.Tree.node LayerTools
-            |> IDE.UI2.Tree.setLimits
+        UI.node LayerTools
+            |> UI.setLimits
                 { yMax = Just 34
                 , yMin = 34
                 , xMax = Nothing
                 , xMin = 206
                 }
-    , objectTools = IDE.UI2.Tree.node ObjectTools |> IDE.UI2.Tree.setLimits { default | xMax = Just 250 }
-    , properties = IDE.UI2.Tree.node Properties |> IDE.UI2.Tree.setLimits { default | xMax = Just 230 }
-    , levelProperties = IDE.UI2.Tree.node LevelProperties |> IDE.UI2.Tree.setLimits { default | xMax = Just 250 }
-    , layers = IDE.UI2.Tree.node Layers |> IDE.UI2.Tree.setLimits { default | xMax = Just 250 }
-    , tilesets = IDE.UI2.Tree.node Tilesets |> IDE.UI2.Tree.setLimits { default | xMax = Just 250 }
-    , render = IDE.UI2.Tree.node Render |> IDE.UI2.Tree.setLimits { default | xMin = 200 }
-    , fileManager = IDE.UI2.Tree.node FileManager |> IDE.UI2.Tree.setLimits default
-    , topMenu = IDE.UI2.Tree.node TopMenu |> IDE.UI2.Tree.setLimits { default | yMin = 22, yMax = Just 22 }
+    , objectTools = UI.node ObjectTools |> UI.setLimits { default | xMax = Just 250 }
+    , properties = UI.node Properties |> UI.setLimits { default | xMax = Just 230 }
+    , levelProperties = UI.node LevelProperties |> UI.setLimits { default | xMax = Just 250 }
+    , layers = UI.node Layers |> UI.setLimits { default | xMax = Just 250 }
+    , tilesets = UI.node Tilesets |> UI.setLimits { default | xMax = Just 250 }
+    , render = UI.node Render |> UI.setLimits { default | xMin = 200 }
+    , fileManager = UI.node FileManager |> UI.setLimits default
+    , topMenu = UI.node TopMenu |> UI.setLimits { default | yMin = 22, yMax = Just 22 }
+    , preferences = UI.node Preferences
     }
 
 
@@ -76,6 +66,7 @@ type alias Model =
     , tilesets : TilesetPanel.Model
     , fileManager : FileManager.Model
     , topMenu : TopMenu.Model
+    , preferences : Preferences.Model
     , widgetCache : { number : Dict String String }
     }
 
@@ -86,6 +77,7 @@ init =
     , tilesets = TilesetPanel.init
     , fileManager = FileManager.init
     , topMenu = TopMenu.init
+    , preferences = Preferences.init
     , widgetCache = { number = Dict.empty }
     }
 
@@ -147,6 +139,9 @@ view { editor, relUrl, files, inStore } level w_ h_ kind =
 
         TopMenu ->
             TopMenu.view editor.topMenu
+
+        Preferences ->
+            Preferences.view editor.preferences
 
 
 panel w_ h_ title content =

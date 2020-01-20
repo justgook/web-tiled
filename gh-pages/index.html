@@ -9,14 +9,13 @@
     <link rel="stylesheet" href="css/flaticon.css">
     <style>
         body {
-            background-image: /* tint image */
-                    linear-gradient(to right, rgba(192, 192, 192, 0.75), rgba(192, 192, 192, 0.75)),
-                        /* checkered effect */
-                    linear-gradient(to right, black 50%, white 50%),
-                    linear-gradient(to bottom, black 50%, white 50%);
+            background-image: /* tint image */ linear-gradient(to right, rgba(192, 192, 192, 0.75), rgba(192, 192, 192, 0.75)),
+                /* checkered effect */ linear-gradient(to right, black 50%, white 50%),
+            linear-gradient(to bottom, black 50%, white 50%);
             background-blend-mode: normal, difference, normal;
             background-size: 2em 2em;
         }
+
         .vResize, .hResize {
             position: relative;
             z-index: 1;
@@ -91,6 +90,7 @@
         :active tr {
             transition-delay: 0.4s;
         }
+
         :active tr.no-delay {
             transition-delay: 0s;
         }
@@ -99,6 +99,39 @@
         td > input {
             margin: -2px -15px;
             padding: 2px 2px 2px 15px;
+        }
+
+        .toolbar-input {
+
+            position: relative;
+            overflow: visible;
+            margin: 0;
+            padding: 0;
+        }
+
+        .toolbar-input .icon {
+            position: absolute;
+            left: 10px;
+            top: 4px;
+            z-index: 1;
+            opacity: 0.5; /* ~matches placeholder */
+
+        }
+
+        .toolbar-input .form-control {
+            padding: 3px 4px 1px 24px;
+            border-radius: 12px;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4),
+            0 0 0 7px rgba(109, 179, 253, 0);
+        }
+
+        .toolbar-input .form-control:focus {
+            /* was already in place */
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4),
+            0 0 0 1px rgba(109, 179, 253, 0.8);
+            transition: box-shadow 250ms ease-out;
+            cursor: text;
+            background-color: white;
         }
 
 
@@ -131,7 +164,6 @@
 
     document.body.addEventListener("dragstart", event => {
         if (event.target && event.target.draggable) {
-            // absurdly, this is needed for Firefox; see https://medium.com/elm-shorts/elm-drag-and-drop-game-630205556d2
             event.dataTransfer.setData("text/html", "blank");
         }
     });
@@ -140,6 +172,12 @@
         // this is needed in order to make dragging work
         return false;
     });
+    document.body.addEventListener("keydown", event => {
+        event.preventDefault();
+        // event.stopPropagation();
+    }, false);
+
+
     const defaultConfig = { file: "hello.json" };
     initRemoteStorage().then((remoteStorage) => {
         const { api } = remoteStorage;

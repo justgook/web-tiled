@@ -1,4 +1,4 @@
-module IDE.UI2.Tree exposing
+module IDE.UI.Tree exposing
     ( Path
     , Size
     , Tree(..)
@@ -243,12 +243,3 @@ maybeDo2 fn a b =
 
         ( Nothing, Nothing ) ->
             Nothing
-
-
-applyIf : Bool -> (a -> a) -> a -> a
-applyIf bool f world =
-    if bool then
-        f world
-
-    else
-        world
