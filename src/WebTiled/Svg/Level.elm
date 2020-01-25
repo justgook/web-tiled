@@ -4,6 +4,7 @@ import Color
 import Html.Lazy
 import IDE.Internal.List as List
 import Tiled.Layer as Layer
+import Tiled.Object exposing (Object(..))
 import TypedSvg exposing (..)
 import TypedSvg.Attributes exposing (d, noFill, patternUnits, stroke, strokeDasharray, viewBox, xlinkHref)
 import TypedSvg.Attributes.InPx exposing (..)
@@ -28,8 +29,9 @@ layer tilewidth tileheight l =
         Layer.Image imageData ->
             g [] []
 
-        Layer.Object objectData ->
-            g [] []
+        Layer.Object info ->
+            layerObject info
+                |> g []
 
         Layer.Tile tileData ->
             layerTile tilewidth tileheight tileData
@@ -37,6 +39,31 @@ layer tilewidth tileheight l =
 
         Layer.InfiniteTile tileChunkedData ->
             g [] []
+
+
+layerObject { objects } =
+    List.map
+        (\object ->
+            case object of
+                Point info ->
+                    g [] []
+
+                Rectangle info ->
+                    g [] []
+
+                Ellipse info ->
+                    g [] []
+
+                Polygon info ->
+                    g [] []
+
+                PolyLine info ->
+                    g [] []
+
+                Tile { gid, x, y } ->
+                    tile x y gid
+        )
+        objects
 
 
 layerTile : Float -> Float -> { a | data : List Int, width : Int } -> List (Svg msg)
@@ -48,22 +75,22 @@ layerTile tilewidth tileheight info =
                     acc
 
                 else
-                    tile info.width tilewidth tileheight i gid :: acc
+                    let
+                        x_ =
+                            toFloat (remainderBy info.width i)
+                                |> (*) tilewidth
+
+                        y_ =
+                            toFloat (i // info.width)
+                                |> (*) tileheight
+                    in
+                    tile x_ y_ gid :: acc
             )
             []
 
 
-tile : Int -> Float -> Float -> Int -> Int -> Svg msg
-tile columns cellWidth cellHeight i gid =
-    let
-        x_ =
-            toFloat (remainderBy columns i)
-                |> (*) cellWidth
-
-        y_ =
-            toFloat (i // columns)
-                |> (*) cellHeight
-    in
+tile : Float -> Float -> Int -> Svg msg
+tile x_ y_ gid =
     use [ xlinkHref <| "#" ++ String.fromInt gid, x x_, y y_ ] []
 
 
@@ -98,7 +125,7 @@ gridDefs group cellW cellH =
             [ path
                 [ d ("M " ++ String.fromFloat cellW ++ " 0 L 0 0 0 " ++ String.fromFloat cellW)
                 , noFill
-                , stroke Color.gray
+                , stroke (Color.rgba 0.82 0.84 0.81 0.3)
                 , strokeWidth 1
                 , strokeDasharray "2 1"
                 ]
@@ -119,7 +146,7 @@ gridDefs group cellW cellH =
             , path
                 [ d ("M " ++ String.fromFloat (group * cellW) ++ " 0 L 0 0 0 " ++ String.fromFloat (group * cellH))
                 , noFill
-                , stroke Color.darkGray
+                , stroke (Color.rgba 0.82 0.84 0.81 0.3)
                 , strokeWidth 2
                 ]
                 []

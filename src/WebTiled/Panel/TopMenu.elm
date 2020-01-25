@@ -1,77 +1,105 @@
-module WebTiled.Panel.TopMenu exposing (Model, init, view)
+module WebTiled.Panel.TopMenu exposing (view)
 
-import Generic.TopMenu exposing (MenuItem(..))
-
-
-type alias Model =
-    ()
+import IDE.UI.TopMenu exposing (MenuItem(..))
+import WebTiled.Message exposing (Message(..), PreferencesTab(..))
 
 
-init =
-    ()
-
-
-view model =
-    [ MenuItem "File"
-        [ MenuItem "New"
-            [ MenuItem "New Map..." []
-            , MenuItem "New Tileset..." []
-            , MenuItem "New World..." []
+view =
+    [ MenuItem True
+        Nothing
+        "File"
+        [ MenuItem False
+            Nothing
+            "New"
+            [ MenuItem False Nothing "New Map..." []
+            , MenuItem False Nothing "New Tileset..." []
+            , MenuItem False Nothing "New World..." []
             ]
-        , MenuItem "Open..." []
-        , MenuItem "Open Url.." []
+        , MenuItem True (Just Open) "Open..." []
+        , MenuItem False Nothing "Open Url..." []
         , Separator
-        , MenuItem "Save" []
-        , MenuItem "Save As.." []
-        , MenuItem "Export" []
-        , MenuItem "Export As.." []
-        , MenuItem "Export As Image..." []
-        , MenuItem "Reload" []
+        , MenuItem False Nothing "Save" []
+        , MenuItem False Nothing "Save As..." []
+        , MenuItem False Nothing "Export" []
+        , MenuItem False Nothing "Export As..." []
+        , MenuItem False Nothing "Export As Image..." []
+        , MenuItem False Nothing "Reload" []
         ]
-    , MenuItem "Edit"
-        [ MenuItem "Preferences" []
+    , MenuItem True
+        Nothing
+        "Edit"
+        [ MenuItem True (Just (ShowPreferences Account)) "Preferences" []
         ]
-    , MenuItem "View"
-        [ MenuItem "Tool Window"
-            [ Checkbox "Properties" True
-            , Checkbox "Layers" True
-            , Checkbox "Tilesets" True
-            , Checkbox "File manager" True
+    , MenuItem True
+        Nothing
+        "View"
+        [ MenuItem False
+            Nothing
+            "Tool Window"
+            [ Checkbox False "Properties" False
+            , Checkbox False "Layers" False
+            , Checkbox False "Tilesets" False
+            , Checkbox False "File manager" False
             ]
-        , MenuItem "Appearance"
-            [ Checkbox "Toolbar" True
-            , Checkbox "Status Bar" False
+        , MenuItem False
+            Nothing
+            "Appearance"
+            [ Checkbox False "Toolbar" False
+            , Checkbox False "Status Bar" True
             , Separator
-            , Checkbox "Full Screen" False
-            , Checkbox "Clear View" False
+            , Checkbox False "Full Screen" True
+            , Checkbox False "Clear View" True
             ]
         , Separator
-        , MenuItem "Object Types Editor" []
+        , MenuItem False Nothing "Object Types Editor" []
         , Separator
-        , Checkbox "Show Grid" True
-        , Checkbox "Show Tile Animations" True
-        , Checkbox "Show Tile Collision Shapes" True
+        , Checkbox False "Show Grid" False
+        , Checkbox False "Show Tile Animations" False
+        , Checkbox False "Show Tile Collision Shapes" False
         ]
-    , MenuItem "Map"
-        [ MenuItem "Resize Map..." []
-        , MenuItem "AutoMap" []
-        , MenuItem "Map Properties..." []
+    , MenuItem True
+        Nothing
+        "Map"
+        [ MenuItem False Nothing "Resize Map..." []
+        , MenuItem False Nothing "AutoMap" []
+        , MenuItem True (Just ShowMapProperties) "Map Properties..." []
         ]
-    , MenuItem "Layer"
-        [ MenuItem "New"
-            [ MenuItem "Tile Layer" []
-            , MenuItem "Object Layer" []
-            , MenuItem "Image Layer" []
+    , MenuItem True
+        Nothing
+        "Layer"
+        [ MenuItem False
+            Nothing
+            "New"
+            [ MenuItem False Nothing "Tile Layer" []
+            , MenuItem False Nothing "Object Layer" []
+            , MenuItem False Nothing "Image Layer" []
             ]
-        , MenuItem "Duplicate Layer(s)" []
-        , MenuItem "Remove Layer(s)" []
+        , MenuItem False Nothing "Duplicate Layer(s)" []
+        , MenuItem False Nothing "Remove Layer(s)" []
         , Separator
-        , MenuItem "Select Previous Layer" []
-        , MenuItem "Select Next Layer" []
-        , MenuItem "Raise Layer(s)" []
-        , MenuItem "Lower Layer(s)" []
+        , MenuItem False
+            Nothing
+            "Scripts"
+            [ MenuItem False Nothing "Look Up Texture" []
+            , MenuItem False Nothing "Collision Map" []
+            ]
         , Separator
-        , MenuItem "Layer Properties..." []
+        , MenuItem False Nothing "Select Previous Layer" []
+        , MenuItem False Nothing "Select Next Layer" []
+        , MenuItem False Nothing "Raise Layer(s)" []
+        , MenuItem False Nothing "Lower Layer(s)" []
+        , Separator
+        , MenuItem True (Just ShowLayerProperties) "Layer Properties..." []
+        ]
+    , MenuItem True
+        Nothing
+        "Tileset"
+        [ MenuItem True (Just ShowTilesetProperties) "Tileset Properties..." [] ]
+    , MenuItem True
+        Nothing
+        "Help"
+        [ MenuItem False Nothing "Examples" []
+        , MenuItem False Nothing "Tutorial" []
         ]
     ]
-        |> Generic.TopMenu.view
+        |> IDE.UI.TopMenu.view

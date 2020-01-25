@@ -14,16 +14,11 @@ function initRemoteStorage() {
         .then(() => {
             const dataPath = "web-tiled";
             const remoteStorage = new RemoteStorage({ modules: [WebTiled] });
-            // remoteStorage.setApiKeys({  googledrive: "AIzaSyAiwd13yS5K1sD7c3iGOYCczMas3sK2yVE"  })
             remoteStorage.access.claim(dataPath, "rw");
             remoteStorage.caching.enable(`/${dataPath}/`);
-            const client = remoteStorage.scope(`/${dataPath}/`);
-            // remoteStorage["web-tiled"].listFiles()
             remoteStorage.api = remoteStorage["web-tiled"];
             return remoteStorage;
-            // return remoteStorage["web-tiled"]
-            //     .getConfig(defaultConfig)
-            //     .then((config) => ({ client, remoteStorage, config }));
+
 
         });
 }
@@ -96,7 +91,6 @@ const WebTiled = {
 
         function rpc(request, response) {
             request(({ method, params, id }) => {
-
                 exports[method].apply(null, params)
                     .then((data) => {
                         // console.log(method, params, id, data);

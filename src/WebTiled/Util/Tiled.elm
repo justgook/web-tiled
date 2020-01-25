@@ -1,17 +1,93 @@
-module Tiled.Util exposing (dependencies, getLevelData, updateLevelData)
+module WebTiled.Util.Tiled exposing
+    ( dependencies
+    , firstGid
+    , getLevelData
+    , images
+    , sourceTileset
+    , updateLevelData
+    )
 
+import Dict
 import Set exposing (Set)
+import Tiled.Layer as Layer
 import Tiled.Level as Level exposing (Level, LevelData)
-import Tiled.Tileset as Tileset
+import Tiled.Tileset as Tileset exposing (Tileset)
 
 
-dependencies : Level -> Set String
-dependencies level =
+sourceTileset : Level -> List Tileset.SourceTileData
+sourceTileset level =
     let
         { layers, tilesets } =
             getLevelData level
     in
     tilesets
+        |> List.foldl
+            (\tileset acc ->
+                case tileset of
+                    Tileset.Source info ->
+                        info :: acc
+
+                    _ ->
+                        acc
+            )
+            []
+
+
+images : Level -> Set String
+images level =
+    let
+        info =
+            getLevelData level
+    in
+    info.tilesets
+        |> List.foldl
+            (\tileset acc ->
+                case tileset of
+                    Tileset.Embedded { image } ->
+                        Set.insert image acc
+
+                    Tileset.ImageCollection { tiles } ->
+                        List.foldl (.image >> Set.insert) acc (Dict.values tiles)
+
+                    _ ->
+                        acc
+            )
+            Set.empty
+        |> (\tilesets ->
+                List.foldl
+                    (\layer acc ->
+                        case layer of
+                            Layer.Image { image } ->
+                                Set.insert image acc
+
+                            _ ->
+                                acc
+                    )
+                    tilesets
+                    info.layers
+           )
+
+
+firstGid : Tileset -> Int
+firstGid item =
+    case item of
+        Tileset.Source info ->
+            info.firstgid
+
+        Tileset.Embedded info ->
+            info.firstgid
+
+        Tileset.ImageCollection info ->
+            info.firstgid
+
+
+dependencies : Level -> Set String
+dependencies level =
+    let
+        info =
+            getLevelData level
+    in
+    info.tilesets
         |> List.foldl
             (\tileset acc ->
                 case tileset of
@@ -25,6 +101,19 @@ dependencies level =
                         acc
             )
             Set.empty
+        |> (\tilesets ->
+                List.foldl
+                    (\layer acc ->
+                        case layer of
+                            Layer.Image { image } ->
+                                Set.insert image acc
+
+                            _ ->
+                                acc
+                    )
+                    tilesets
+                    info.layers
+           )
 
 
 updateLevelData : (LevelData -> LevelData) -> Level -> Level

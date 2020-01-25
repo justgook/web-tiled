@@ -1,23 +1,21 @@
-module Generic.TopMenu exposing (MenuItem(..), view)
+module IDE.UI.TopMenu exposing (MenuItem(..), view)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Html.Events exposing (onClick)
+import Html.Lazy
 
 
 view items =
-    Html.node "style" [] [ css ]
+    Html.Lazy.lazy css ()
         :: menu items
-        |> ul [ class "menu", tabindex -1 ]
+        |> ul [ class "menu", id "top-menu", tabindex -1 ]
 
 
-type MenuItem
+type MenuItem msg
     = Separator
-    | MenuItem String (List MenuItem)
-    | Checkbox String Bool
-
-
-
---class="icon icon-check"
+    | MenuItem Bool (Maybe msg) String (List (MenuItem msg))
+    | Checkbox Bool String Bool
 
 
 menu =
@@ -27,9 +25,9 @@ menu =
                 Separator ->
                     li [ class "menu-separator" ] []
 
-                Checkbox label checked ->
+                Checkbox enabled label checked ->
                     li [ class "menu-item checked" ]
-                        [ span [ class "menu-label" ]
+                        [ span [ class "menu-label", classList [ ( "disabled", not enabled ) ] ]
                             [ if checked then
                                 span [ class "icon icon-check" ] []
 
@@ -39,21 +37,31 @@ menu =
                             ]
                         ]
 
-                MenuItem label submenu ->
+                MenuItem enabled msg label submenu ->
                     li [ class "menu-item" ]
                         (if List.isEmpty submenu then
-                            [ span [ class "menu-label" ] [ text label ] ]
+                            [ a (attrs msg enabled) [ text label ] ]
 
                          else
-                            [ span [ class "menu-label" ] [ text label, span [ class "icon icon-play" ] [] ]
+                            [ span [ class "menu-label", classList [ ( "disabled", not enabled ) ] ] [ text label, span [ class "icon icon-play" ] [] ]
                             , menu submenu |> ul [ class "sub-menu" ]
                             ]
                         )
         )
 
 
-css =
-    text """
+attrs msg enabled =
+    case msg of
+        Just msg_ ->
+            [ class "menu-label", onClick msg_, classList [ ( "disabled", not enabled ) ] ]
+
+        Nothing ->
+            [ class "menu-label", classList [ ( "disabled", not enabled ) ] ]
+
+
+css : () -> Html msg
+css _ =
+    Html.node "style" [] [ text """
 
 .menu, .sub-menu {
     margin: 0;
@@ -79,7 +87,7 @@ css =
 
 }
 .menu > .menu-item > .menu-label > .icon {
-    display:none;
+    display: none;
 }
 
 .menu-item {
@@ -96,6 +104,7 @@ css =
     padding: 0 10px;
     background: inherit;
 }
+
 .sub-menu .menu-label {
     padding-left: 20px;
 }
@@ -142,13 +151,16 @@ css =
 .sub-menu {
     visibility: hidden;
 }
+
 .menu:focus .menu-item:hover .sub-menu {
     visibility: visible;
 }
+
 .menu:focus .menu-item:hover .sub-menu .sub-menu {
     visibility: hidden;
 }
+
 .menu:focus .menu-item:hover .sub-menu .menu-item:hover>.sub-menu {
     visibility: visible;
 }
-"""
+""" ]

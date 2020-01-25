@@ -1,23 +1,66 @@
-module WebTiled.Panel exposing (Message(..), Model, block, init, view)
+module WebTiled.Panel exposing
+    ( fileManager
+    , layers
+    , preferences
+    , preview
+    , properties
+    , render
+    , statusbar
+    , tilesets
+    , toolbar
+    , topMenu
+    )
 
-import Dict exposing (Dict)
-import Html exposing (Attribute, Html, a, button, div, h1, header, nav, span, text)
-import Html.Attributes exposing (class, style)
-import IDE.UI.Tree as UI
-import Tiled.Layer as Layer
-import Tiled.Level as Tiled
-import Tiled.Util
-import WebTiled.Kind exposing (Kind(..))
-import WebTiled.Panel.FileManager as FileManager
-import WebTiled.Panel.LevelProperties as LevelPropertiesPanel
-import WebTiled.Panel.Preferences as Preferences
-import WebTiled.Panel.Properties exposing (propertiesTable)
-import WebTiled.Panel.Render as RenderPanel
-import WebTiled.Panel.Tileset as TilesetPanel
-import WebTiled.Panel.TopMenu as TopMenu
+import Dict
+import Html exposing (Attribute, Html, a, div, span, text)
+import Html.Lazy
+import IDE.Internal.List as List
+import IDE.UI.Layout as UI
+import Tiled.Layer exposing (Layer(..))
+import Tiled.Level exposing (Level)
+import Tiled.Tileset as Tileset
+import WebTiled.Message exposing (Message(..))
+import WebTiled.Model exposing (CurrentLevel(..), Kind(..), LevelFrom(..), Model, PropertiesFor(..))
+import WebTiled.Panel.Generic
+import WebTiled.Panel.Layers
+import WebTiled.Panel.Preferences
+import WebTiled.Panel.Preview
+import WebTiled.Panel.Progress
+import WebTiled.Panel.Properties.Generic
+import WebTiled.Panel.Properties.Layer
+import WebTiled.Panel.Properties.Map
+import WebTiled.Panel.Properties.Tileset
+import WebTiled.Panel.Statusbar
+import WebTiled.Panel.Tilesets
+import WebTiled.Panel.Toolbar.RemoteStorage
+import WebTiled.Panel.Toolbar.TileLayer
+import WebTiled.Panel.Toolbar.Tools
+import WebTiled.Panel.TopMenu
+import WebTiled.Util.Tiled as TiledUtil
 
 
-block =
+preview : UI.Layout Kind
+preview =
+    UI.node Preview |> UI.setLimits { yMax = Nothing, yMin = 10, xMax = Nothing, xMin = 10 }
+
+
+fileManager : UI.Layout Kind
+fileManager =
+    UI.node FileManager
+
+
+preferences : UI.Layout Kind
+preferences =
+    UI.node Preferences
+
+
+tilesets : UI.Layout Kind
+tilesets =
+    UI.node Tilesets
+
+
+topMenu : UI.Layout Kind
+topMenu =
     let
         default =
             { xMin = 10
@@ -26,234 +69,194 @@ block =
             , yMax = Nothing
             }
     in
-    { mainTools =
-        UI.node MainTools
-            |> UI.setLimits
-                { yMax = Just 34
-                , yMin = 34
-                , xMax = Just 222
-                , xMin = 220
-                }
-    , layerTools =
-        UI.node LayerTools
-            |> UI.setLimits
-                { yMax = Just 34
-                , yMin = 34
-                , xMax = Nothing
-                , xMin = 206
-                }
-    , objectTools = UI.node ObjectTools |> UI.setLimits { default | xMax = Just 250 }
-    , properties = UI.node Properties |> UI.setLimits { default | xMax = Just 230 }
-    , levelProperties = UI.node LevelProperties |> UI.setLimits { default | xMax = Just 250 }
-    , layers = UI.node Layers |> UI.setLimits { default | xMax = Just 250 }
-    , tilesets = UI.node Tilesets |> UI.setLimits { default | xMax = Just 250 }
-    , render = UI.node Render |> UI.setLimits { default | xMin = 200 }
-    , fileManager = UI.node FileManager |> UI.setLimits default
-    , topMenu = UI.node TopMenu |> UI.setLimits { default | yMin = 22, yMax = Just 22 }
-    , preferences = UI.node Preferences
-    }
+    UI.node TopMenu |> UI.setLimits { default | yMin = 22, yMax = Just 22 }
 
 
-type Message msg
-    = Editor (Model -> Model)
-    | Level (Tiled.Level -> Tiled.Level)
-    | EditorLevel (Model -> Tiled.Level -> ( Model, Tiled.Level ))
-    | EditorCmd (Model -> ( Model, Cmd msg ))
+toolbar : UI.Layout Kind
+toolbar =
+    ( UI.node MainTools |> UI.setLimits { yMax = Just 34, yMin = 34, xMax = Just 262, xMin = 260 }
+    , [ UI.node TileLayerTools |> UI.setLimits { yMax = Just 34, yMin = 34, xMax = Just 206, xMin = 206 }
+      , UI.node CloudTools |> UI.setLimits { yMax = Just 34, yMin = 34, xMax = Nothing, xMin = 40 }
+      ]
+    )
+        |> UI.fromList
 
 
-type alias Model =
-    { render : RenderPanel.Model
-    , tilesets : TilesetPanel.Model
-    , fileManager : FileManager.Model
-    , topMenu : TopMenu.Model
-    , preferences : Preferences.Model
-    , widgetCache : { number : Dict String String }
-    }
+statusbar : UI.Layout Kind
+statusbar =
+    ( UI.node Statusbar |> UI.setLimits { yMax = Just 26, yMin = 26, xMax = Nothing, xMin = 20 }, [] )
+        |> UI.fromList
 
 
-init : Model
-init =
-    { render = RenderPanel.init
-    , tilesets = TilesetPanel.init
-    , fileManager = FileManager.init
-    , topMenu = TopMenu.init
-    , preferences = Preferences.init
-    , widgetCache = { number = Dict.empty }
-    }
+layers : UI.Layout Kind
+layers =
+    UI.node Layers
+        |> UI.setLimits { yMax = Nothing, yMin = 20, xMax = Just 300, xMin = 20 }
 
 
-view { editor, relUrl, files, inStore } level w_ h_ kind =
-    case kind of
-        MainTools ->
-            bare w_ h_ [ mainToolbar ]
-                |> Html.map Editor
-
-        LayerTools ->
-            bare w_ h_ [ layerToolbar ]
-                |> Html.map Editor
-
-        ObjectTools ->
-            bare w_ h_ []
-                |> Html.map Editor
-
-        LevelProperties ->
-            LevelPropertiesPanel.view editor.widgetCache level
-                |> panel w_ h_ "Properties"
-                |> Html.map EditorLevel
-
-        Properties ->
-            panel w_ h_ "Properties" (propertiesTable ( "Object", [] ) [])
-                |> Html.map Editor
-
-        Layers ->
-            panel w_ h_ "Layers" (layers (Tiled.Util.getLevelData level).layers)
-                |> Html.map Editor
-
-        Tilesets ->
-            [ TilesetPanel.view editor.tilesets relUrl files (Tiled.Util.getLevelData level).tilesets
-                |> Html.map (\fn model -> { model | tilesets = fn model.tilesets })
-            ]
-                |> panel w_ h_ "Tilesets"
-                |> Html.map Editor
-
-        Render ->
-            [ RenderPanel.view editor.render level
-                |> Html.map (\fn model -> { model | render = fn model.render })
-            ]
-                |> bare w_ h_
-                |> Html.map Editor
-
-        FileManager ->
-            [ FileManager.view editor.fileManager files inStore
-                |> Html.map
-                    (\fn model ->
-                        let
-                            ( newModel, cmd ) =
-                                fn model.fileManager
-                        in
-                        ( { model | fileManager = newModel }, cmd )
-                    )
-            ]
-                |> panel w_ h_ "File Manager"
-                |> Html.map EditorCmd
-
-        TopMenu ->
-            TopMenu.view editor.topMenu
-
-        Preferences ->
-            Preferences.view editor.preferences
+properties : UI.Layout Kind
+properties =
+    UI.node Properties
+        |> UI.setLimits { yMax = Nothing, yMin = 20, xMax = Just 300, xMin = 20 }
 
 
-panel w_ h_ title content =
-    bare w_
-        h_
-        [ header [ class "toolbar toolbar-header" ]
-            [ h1 [ class "title" ]
-                [ text title ]
-            ]
-        , div
-            [ class "pane"
-            , style "background" "#BFBFBF"
-            , style "display" "flex"
-            , style "flex-flow" "column"
-            ]
-            content
-        ]
+render : Model -> Int -> Int -> Kind -> Html Message
+render model w h kind =
+    case ( kind, model.level ) of
+        ( FakeProgress, _ ) ->
+            WebTiled.Panel.Progress.view
 
+        ( TopMenu, _ ) ->
+            WebTiled.Panel.TopMenu.view
 
-bare w_ h_ =
-    let
-        setWidth w =
-            String.fromInt w ++ "px" |> style "width"
+        ( Preview, LevelComplete _ level _ ) ->
+            WebTiled.Panel.Preview.view (TiledUtil.getLevelData level)
 
-        setHeight w =
-            String.fromInt w ++ "px" |> style "height"
-    in
-    div
-        [ setWidth w_
-        , setHeight h_
-        , style "display" "flex"
-        , style "flex-flow" "column"
-        , style "position" "relative"
-        ]
+        ( Layers, LevelComplete _ level _ ) ->
+            WebTiled.Panel.Layers.view w h model.selectedLayers (TiledUtil.getLevelData level).layers
 
+        ( Layers, _ ) ->
+            WebTiled.Panel.Layers.view w h model.selectedLayers []
 
-mainToolbar =
-    header [ class "toolbar toolbar-header" ]
-        [ div [ class "toolbar-actions" ]
-            [ div [ class "btn-group" ]
-                [ button [ class "btn btn-default" ]
-                    [ span [ class "icon icon-doc-text" ]
-                        []
+        ( Preferences, _ ) ->
+            WebTiled.Panel.Preferences.view model.settings
+
+        ( MainTools, _ ) ->
+            WebTiled.Panel.Toolbar.Tools.view
+
+        ( TileLayerTools, _ ) ->
+            WebTiled.Panel.Toolbar.TileLayer.view
+
+        ( CloudTools, _ ) ->
+            WebTiled.Panel.Toolbar.RemoteStorage.view
+
+        ( Statusbar, _ ) ->
+            WebTiled.Panel.Statusbar.view model.version
+
+        ( FileManager, _ ) ->
+            div [] [ text "Loading.." ] |> WebTiled.Panel.Generic.panel w h "File Manager"
+
+        ( Tilesets, _ ) ->
+            case model.level of
+                LevelComplete (UrlLevel url) level external ->
+                    [ Html.Lazy.lazy3 WebTiled.Panel.Tilesets.imagesFromUrl url (TiledUtil.getLevelData level).tilesets external
+                    , Html.Lazy.lazy5 WebTiled.Panel.Tilesets.view w h model.selectedTileset (TiledUtil.getLevelData level).tilesets external
                     ]
-                , button [ class "btn btn-default" ]
-                    [ span [ class "icon icon-folder" ] []
+                        |> div []
+
+                LevelComplete (DiskLevel images) level external ->
+                    [ Html.Lazy.lazy2 WebTiled.Panel.Tilesets.imagesFromDisk images (TiledUtil.getLevelData level).tilesets
+                    , Html.Lazy.lazy5 WebTiled.Panel.Tilesets.view w h model.selectedTileset (TiledUtil.getLevelData level).tilesets external
                     ]
-                , button [ class "btn btn-default" ] [ span [ class "icon icon-floppy" ] [] ]
-                ]
-            , div
-                [ class "btn-group" ]
-                [ button [ class "btn btn-default active" ]
-                    [ span [ class "icon icon-reply" ]
-                        []
-                    ]
-                , button [ class "btn btn-default" ]
-                    [ span [ class "icon icon-forward" ]
-                        []
-                    ]
-                ]
-            , button [ class "btn btn-default" ]
-                [ span [ class "icon icon-tools" ]
-                    []
-                ]
-            ]
-        ]
+                        |> div []
 
+                LevelComplete (RemoteStorageLevel _) _ _ ->
+                    div [] [] |> WebTiled.Panel.Generic.panel w h "Tilesets"
 
-layerToolbar =
-    header [ class "toolbar toolbar-header" ]
-        [ div [ class "toolbar-actions" ]
-            [ div [ class "btn-group" ]
-                [ button [ class "btn btn-default" ] [ span [ class "icon flaticon-rubber-stamp" ] [] ]
-                , button [ class "btn btn-default" ] [ span [ class "icon flaticon-paint-bucket-2" ] [] ]
-                , button [ class "btn btn-default" ] [ span [ class "icon flaticon-cropping-tool-point-1" ] [] ]
-                , button [ class "btn btn-default" ] [ span [ class "icon flaticon-eraser" ] [] ]
-                , button [ class "btn btn-default" ] [ span [ class "icon flaticon-dotted-square" ] [] ]
-                , button [ class "btn btn-default" ] [ span [ class "icon flaticon-magic-wand-with-a-star" ] [] ]
-                ]
-            ]
-        ]
+                LevelLoading _ _ _ _ ->
+                    div [] [ text "Loading... " ] |> WebTiled.Panel.Generic.panel w h "Tilesets"
 
+                LevelPartial _ _ _ _ ->
+                    div [] [ text "Missing files" ] |> WebTiled.Panel.Generic.panel w h "Tilesets"
 
-layers l =
-    [ nav [ class "nav-group sidebar" ]
-        (List.map
-            (\layer ->
-                case layer of
-                    Layer.Image imageData ->
-                        a [ class "nav-group-item active" ]
-                            [ span [ class "icon icon-picture" ] []
-                            , text imageData.name
-                            ]
+                LevelNone ->
+                    div [] [ text "No Level" ] |> WebTiled.Panel.Generic.panel w h "Tilesets"
 
-                    Layer.Object objectData ->
-                        a [ class "nav-group-item" ]
-                            [ span [ class "icon icon-network" ] []
-                            , text objectData.name
-                            ]
+        ( Properties, LevelComplete _ level external ) ->
+            case model.propertiesFocus of
+                TilesetProps i ->
+                    case (TiledUtil.getLevelData level).tilesets |> List.getAt i of
+                        Just (Tileset.Source { source, firstgid }) ->
+                            case Dict.get firstgid external of
+                                Just (Tileset.Embedded info) ->
+                                    WebTiled.Panel.Properties.Tileset.view info
+                                        |> WebTiled.Panel.Properties.Generic.properties "Tileset" info.properties w h
 
-                    Layer.Tile tileData ->
-                        a [ class "nav-group-item" ]
-                            [ span [ class "icon icon-layout" ] []
-                            , text tileData.name
-                            ]
+                                _ ->
+                                    span [] [ text ("Loading (" ++ source ++ ")") ]
+                                        |> WebTiled.Panel.Generic.panel w h "Tilesets"
 
-                    Layer.InfiniteTile tileChunkedData ->
-                        a [ class "nav-group-item" ]
-                            [ span [ class "icon icon-layout" ] []
-                            , text tileChunkedData.name
-                            ]
-            )
-            l
-        )
-    ]
+                        Just (Tileset.Embedded info) ->
+                            WebTiled.Panel.Properties.Tileset.view info
+                                |> WebTiled.Panel.Properties.Generic.properties "Tileset" info.properties w h
+
+                        Just (Tileset.ImageCollection info) ->
+                            span [] [ text "NOT IMPLEMENTED YET" ]
+                                |> WebTiled.Panel.Generic.panel w h "Tilesets"
+
+                        Nothing ->
+                            span [] [ text "Tileset Deleted" ]
+                                |> WebTiled.Panel.Generic.panel w h "Tilesets"
+
+                TileProps _ ->
+                    span [] [ text "TileProps" ]
+
+                LayerProps i ->
+                    case (TiledUtil.getLevelData level).layers |> List.getAt i of
+                        Just (Tile info) ->
+                            WebTiled.Panel.Properties.Layer.view
+                                { name = info.name
+                                , opacity = info.opacity
+                                , visible = info.visible
+                                , x = info.x
+                                , y = info.y
+                                }
+                                |> WebTiled.Panel.Properties.Generic.properties "Tile Layer" info.properties w h
+
+                        Just (Object info) ->
+                            WebTiled.Panel.Properties.Layer.view
+                                { name = info.name
+                                , opacity = info.opacity
+                                , visible = info.visible
+                                , x = info.x
+                                , y = info.y
+                                }
+                                |> WebTiled.Panel.Properties.Generic.properties "Object Layer" info.properties w h
+
+                        Just (Image info) ->
+                            WebTiled.Panel.Properties.Layer.view
+                                { name = info.name
+                                , opacity = info.opacity
+                                , visible = info.visible
+                                , x = info.x
+                                , y = info.y
+                                }
+                                |> WebTiled.Panel.Properties.Generic.properties "Image Layer" info.properties w h
+
+                        Just (InfiniteTile info) ->
+                            WebTiled.Panel.Properties.Layer.view
+                                { name = info.name
+                                , opacity = info.opacity
+                                , visible = info.visible
+                                , x = info.x
+                                , y = info.y
+                                }
+                                |> WebTiled.Panel.Properties.Generic.properties "Infinite Tile Layer" info.properties w h
+
+                        Nothing ->
+                            span [] [ text "Layer deleted" ]
+                                |> WebTiled.Panel.Generic.panel w h "Properties"
+
+                ObjectProps _ ->
+                    span [] [ text "ObjectProps" ]
+
+                LevelProps ->
+                    let
+                        info =
+                            TiledUtil.getLevelData level
+                    in
+                    WebTiled.Panel.Properties.Map.view
+                        { backgroundcolor = info.backgroundcolor
+                        , height = info.height
+                        , infinite = info.infinite
+                        , renderorder = info.renderorder
+                        , tiledversion = info.tiledversion
+                        , tileheight = info.tileheight
+                        , tilewidth = info.tilewidth
+                        , version = info.version
+                        , width = info.width
+                        }
+                        |> WebTiled.Panel.Properties.Generic.properties "Map" info.properties w h
+
+        _ ->
+            span [] [ text "NOT IMPLEMENTED YET" ]

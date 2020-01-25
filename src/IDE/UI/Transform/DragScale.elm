@@ -2,14 +2,15 @@ module IDE.UI.Transform.DragScale exposing (DragScale, apply, handlerWheel, whee
 
 import Html exposing (Attribute)
 import Html.Attributes as Html exposing (attribute)
-import IDE.UI.Transform.Drag as Drag
-import IDE.UI.Transform.Scale as Scale
 import Json.Decode as D exposing (Decoder)
 import VirtualDom exposing (Handler(..))
 
 
 type alias DragScale a =
-    Drag.Model (Scale.Model a)
+    { a
+        | scale : Float
+        , drag : { x : Float, y : Float }
+    }
 
 
 
@@ -25,7 +26,6 @@ apply m =
         y =
             String.fromFloat m.drag.y
 
-        --
         s =
             String.fromFloat (max 0 m.scale)
     in

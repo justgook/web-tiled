@@ -2,17 +2,18 @@ module IDE.UI.Html exposing (modal, view)
 
 import Html exposing (..)
 import Html.Attributes exposing (class, style)
+import Html.Lazy
 import IDE.Internal.Many as Many exposing (Many)
-import IDE.UI.Tree as Tree exposing (Tree(..))
+import IDE.UI.Layout as Tree exposing (Layout(..))
 
 
-view : (Int -> Int -> panel -> Html msg) -> Int -> Int -> Tree panel -> List (Html msg)
+view : (Int -> Int -> panel -> Html msg) -> Int -> Int -> Layout panel -> List (Html msg)
 view fn w h m =
     wrapper fn w h m
-        |> (::) (Html.node "style" [] [ text css ])
+        |> (::) (Html.Lazy.lazy css ())
 
 
-modal : (Int -> Int -> panel -> Html msg) -> Int -> Int -> Tree panel -> List (Html msg)
+modal : (Int -> Int -> panel -> Html msg) -> Int -> Int -> Layout panel -> List (Html msg)
 modal fn w_ h_ m =
     let
         { xMax, yMax, xMin, yMin } =
@@ -26,10 +27,10 @@ modal fn w_ h_ m =
             Maybe.map (min (h_ // 4 * 3)) yMax
                 |> Maybe.withDefault (max yMin (h_ // 4 * 3))
     in
-    [ Html.node "style" [] [ text modalCss ]
+    [ Html.Lazy.lazy modalCss ()
     , div [ class "modal-background" ] []
     , div
-        [ class "modal window"
+        [ class "modal"
         , style "width" <| px w
         , style "height" <| px h
         ]
@@ -37,7 +38,7 @@ modal fn w_ h_ m =
     ]
 
 
-wrapper : (Int -> Int -> panel -> Html msg) -> Int -> Int -> Tree panel -> List (Html msg)
+wrapper : (Int -> Int -> panel -> Html msg) -> Int -> Int -> Layout panel -> List (Html msg)
 wrapper fn w h m =
     let
         pxW p a =
@@ -49,7 +50,7 @@ wrapper fn w h m =
     wrapper_ fn pxW pxH w h m
 
 
-wrapper_ : (Int -> Int -> panel -> Html msg) -> (Tree.Size -> Int -> Int) -> (Tree.Size -> Int -> Int) -> Int -> Int -> Tree panel -> List (Html msg)
+wrapper_ : (Int -> Int -> panel -> Html msg) -> (Tree.Size -> Int -> Int) -> (Tree.Size -> Int -> Int) -> Int -> Int -> Layout panel -> List (Html msg)
 wrapper_ fn pxW pxH w_ h_ m =
     case m of
         Branch p childs ->
@@ -94,8 +95,9 @@ px i =
     String.fromInt i ++ "px"
 
 
-css =
-    """
+css : () -> Html msg
+css _ =
+    [ text """
 .panels {
    float:left;
    position:relative;
@@ -105,21 +107,20 @@ css =
     position:relative;
 }
 
-"""
+""" ]
+        |> Html.node "style" []
 
 
-modalCss =
-    """
+modalCss : () -> Html msg
+modalCss _ =
+    [ text """
 .modal {
     position:fixed;
-    box-shadow: 0 0 30px rgba(0,0,0,.1);
-    border: 1px solid #bebebe;
     border-radius: 6px;
     z-index:4;
     top:50%;
     left:50%;
     transform: translate(-50%,-50%);
-    overflow: hidden;
 }
 .modal-background {
     position:fixed;
@@ -130,4 +131,5 @@ modalCss =
     background-color: rgba(0,0,0,0.4);
     z-index:4;
 }
-"""
+""" ]
+        |> Html.node "style" []

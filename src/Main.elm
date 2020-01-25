@@ -4,28 +4,24 @@ import Browser
 import Browser.Dom as Browser
 import Browser.Events
 import Dict
+import File
+import File.Select
 import Html exposing (Html)
-import Html.Attributes exposing (style)
+import Html.Attributes exposing (tabindex)
 import Html.Events
-import Http
-import IDE.UI.Hotkey as Hotkey
 import IDE.UI.Html
-import IDE.UI.Tree as UI exposing (Tree)
-import Init exposing (Editor, Level, Model, initEditor)
+import IDE.UI.Layout as UI exposing (Layout)
 import Json.Decode as D
-import Message exposing (Message(..))
-import RemoteStorage
-import Set
+import RemoteStorage as RS
 import Task
-import Tiled
-import Tiled.Util as Util
-import WebTiled.DropFiles as DropFiles
-import WebTiled.Kind exposing (Kind)
-import WebTiled.Panel as PanelTiled
-import WebTiled.Panel2 as Panel2
+import WebTiled.Message exposing (Message(..))
+import WebTiled.Model as Model exposing (CurrentLevel(..), LevelFrom(..), Model, PropertiesFor(..))
+import WebTiled.Panel as Panel2 exposing (preferences)
+import WebTiled.Util.File as File
+import WebTiled.Util.Http as Http
 
 
-main : Program D.Value (Model Message) Message
+main : Program D.Value Model Message
 main =
     Browser.document
         { init = init
@@ -35,214 +31,157 @@ main =
         }
 
 
-subscriptions : Model Message -> Sub Message
+subscriptions : Model -> Sub Message
 subscriptions model =
     [ Browser.Events.onResize Resize
-    , RemoteStorage.subscriptions
-        |> Sub.map (Result.map FromStore >> Result.withDefault FromStoreUnknown)
+
+    --, RemoteStorage.subscriptions |> Sub.map (Result.map FromStore >> Result.withDefault FromStoreUnknown)
     ]
         |> Sub.batch
 
 
-update : Message -> Model Message -> ( Model Message, Cmd Message )
-update msg ({ editor } as model) =
-    case ( msg, model.level ) of
-        ( UI2 msg_, _ ) ->
-            Panel2.update msg_ model
+update : Message -> Model -> ( Model, Cmd Message )
+update msg model =
+    case msg of
+        SelectLayer i ->
+            ( { model | selectedLayers = [ i ], propertiesFocus = LayerProps i }, Cmd.none )
 
-        ( UI msg2, Init.Succeed level ) ->
-            case msg2 of
-                PanelTiled.Editor fn ->
-                    ( { model | editor = { editor | editor = fn editor.editor } }
-                    , Cmd.none
-                    )
+        SelectTileset i ->
+            ( { model | selectedTileset = i, propertiesFocus = TilesetProps i }, Cmd.none )
 
-                PanelTiled.Level fn ->
-                    ( { model | level = Init.Succeed (fn level) }
-                    , Cmd.none
-                    )
+        ShowMapProperties ->
+            ( { model | propertiesFocus = LevelProps }, Cmd.none )
 
-                PanelTiled.EditorLevel fn ->
-                    let
-                        ( newEditor, newLevel ) =
-                            fn editor.editor level
-                    in
-                    ( { model
-                        | level = Init.Succeed newLevel
-                        , editor = { editor | editor = newEditor }
-                      }
-                    , Cmd.none
-                    )
-
-                PanelTiled.EditorCmd fn ->
-                    let
-                        ( newEditor, cmd ) =
-                            fn editor.editor
-                    in
-                    ( { model | editor = { editor | editor = newEditor } }
-                    , cmd
-                    )
-
-        ( Resize w h, _ ) ->
-            ( { model
-                | editor =
-                    { editor
-                        | ui = UI.balance w h editor.ui
-                    }
-                , size = { w = w, h = h }
-              }
+        ShowLayerProperties ->
+            ( Maybe.map (\i -> { model | propertiesFocus = LayerProps i }) (List.head model.selectedLayers)
+                |> Maybe.withDefault model
             , Cmd.none
             )
 
-        ( Init gotLevel, _ ) ->
+        ShowTilesetProperties ->
+            ( { model | propertiesFocus = TilesetProps model.selectedTileset }, Cmd.none )
+
+        ShowPreferences category ->
+            ( { model | settings = category, modal = Just preferences }, Cmd.none )
+
+        CloseModal ->
+            ( { model | modal = Nothing }, Cmd.none )
+
+        Open ->
+            ( model, File.Select.files [] (\a -> (::) a >> GetFiles) )
+
+        GetFileFromUrl url ->
+            ( model, Http.getLevel url )
+
+        GetFiles files ->
+            ( model, File.getLevel files )
+
+        FileFromUrl relUrl level tilesets ->
+            ( { model | level = LevelComplete (UrlLevel relUrl) level (Dict.fromList tilesets) }, Cmd.none )
+
+        FilesFromDisk levels tilesets images ->
+            case levels |> Dict.values |> List.head of
+                Just level ->
+                    case File.validate level tilesets images of
+                        Ok _ ->
+                            ( { model | level = LevelComplete (DiskLevel images) level Dict.empty }, Cmd.none )
+
+                        Err err ->
+                            let
+                                _ =
+                                    Debug.log "FilesFromDisk-ERROR" err
+                            in
+                            ( model, Cmd.none )
+
+                Nothing ->
+                    let
+                        _ =
+                            Debug.log "FilesFromDisk-ERROR" "NO LEVEL"
+                    in
+                    ( model, Cmd.none )
+
+        FileError err ->
             let
-                level =
-                    case gotLevel of
-                        Ok level_ ->
-                            Init.Succeed level_
-
-                        Err _ ->
-                            Init.Fail "HTTP ERROR"
+                _ =
+                    Debug.log "FileError" err
             in
-            ( { model | level = level }
-            , [ RemoteStorage.getFiles
-              , Browser.getViewport |> Task.perform (\{ scene } -> Resize (round scene.width) (round scene.height))
-              ]
-                |> Cmd.batch
-            )
+            ( model, Cmd.none )
 
-        ( FilesDropped task, _ ) ->
-            ( model, Task.attempt FilesParsed task )
-
-        ( FilesParsed result, current ) ->
-            result
-                |> Result.toMaybe
-                |> Maybe.map
-                    (List.foldl
-                        (\file ( files, level, cmd ) ->
-                            case file of
-                                ( name, (DropFiles.Level l) as value, source ) ->
-                                    ( Dict.insert name value files
-                                    , Init.Succeed l
-                                    , RemoteStorage.storeFile "application/tiled.level-json" name source :: cmd
-                                    )
-
-                                ( name, (DropFiles.Tileset l) as value, source ) ->
-                                    ( Dict.insert name value files
-                                    , level
-                                    , RemoteStorage.storeFile "application/tiled.tileset-json" name source :: cmd
-                                    )
-
-                                ( name, (DropFiles.Image img) as value, _ ) ->
-                                    ( Dict.insert name value files
-                                    , level
-                                    , RemoteStorage.storeFile "image/base64" name img :: cmd
-                                    )
-                        )
-                        ( editor.files, current, [] )
-                    )
-                |> Maybe.map
-                    (\( files, level, cmd ) ->
-                        ( { model
-                            | level = level
-                            , editor =
-                                { editor
-                                    | files = files
-                                    , inStore =
-                                        Dict.map (\_ _ -> Nothing) files
-                                            |> Dict.union editor.inStore
-                                }
-                          }
-                        , Cmd.batch cmd
-                        )
-                    )
-                |> Maybe.withDefault ( model, Cmd.none )
-
-        ( FromStore fn, current ) ->
-            let
-                newEditor =
-                    fn editor
-
-                ( level, newCmds ) =
-                    Dict.diff newEditor.files editor.files
-                        |> Dict.foldl
-                            (\k v (( _, cmds ) as acc) ->
-                                case v of
-                                    DropFiles.Level l ->
-                                        ( Init.Succeed l
-                                        , Set.diff (Util.dependencies l) (Dict.keys editor.files |> Set.fromList)
-                                            |> Set.foldl (RemoteStorage.getFile >> (::)) cmds
-                                        )
-
-                                    _ ->
-                                        acc
-                            )
-                            ( current, [] )
-            in
+        Resize w h ->
             ( { model
-                | editor = newEditor
-                , level = level
+                | layout = UI.balance w h model.layout
+                , size = { w = w, h = h }
               }
-            , Cmd.batch newCmds
+            , Cmd.none
             )
 
         _ ->
             ( model, Cmd.none )
 
 
-init : D.Value -> ( Model Message, Cmd Message )
-init _ =
+init : D.Value -> ( Model, Cmd Message )
+init flags =
     let
         url =
-            "top-down-adventure/demo.json"
+            D.decodeValue (D.field "levelUrl" D.string) flags
+                |> Result.withDefault "top-down-adventure/demo.json"
 
-        ui2 =
-            Panel2.preferences
+        left =
+            UI.fromList ( Panel2.properties, [ Panel2.fileManager ] )
+
+        center =
+            Panel2.preview
+
+        right =
+            UI.fromList ( Panel2.layers, [ Panel2.tilesets ] )
+
+        layout =
+            UI.fromList ( Panel2.topMenu, [ Panel2.toolbar, UI.fromList ( left, [ center, right ] ), Panel2.statusbar ] )
+
+        ( m, cmd ) =
+            Model.init flags
+                |> update (WebTiled.Message.GetFileFromUrl url)
     in
-    ( { level = Init.Loading
-      , editor = initEditor url
-      , size = { w = 200, h = 200 }
-      , ui2 = ui2
-      , state = Panel2.init
-      }
-    , [ getLevel url ] |> Cmd.batch
+    ( { m | layout = layout }
+    , [ cmd
+      , RS.getFiles
+      , Browser.getViewport |> Task.perform (\{ scene } -> Resize (round scene.width) (round scene.height))
+      ]
+        |> Cmd.batch
     )
 
 
-getLevel : String -> Cmd Message
-getLevel url =
-    Http.get
-        { url = url
-        , expect = Http.expectJson (\result -> Init result) Tiled.decode
-        }
-
-
-view : Model Message -> Html Message
+view : Model -> Html Message
 view model =
-    case model.level of
-        Init.Succeed level ->
-            IDE.UI.Html.view (PanelTiled.view model.editor level) model.size.w model.size.h model.editor.ui
-                |> (Maybe.map
-                        (\modal rest ->
-                            rest
-                                ++ IDE.UI.Html.modal
-                                    (PanelTiled.view model.editor level)
-                                    model.size.w
-                                    model.size.h
-                                    modal
-                        )
-                        model.editor.modal
-                        |> Maybe.withDefault identity
-                   )
-                |> List.map (Html.map UI)
-                |> Html.main_
-                    [ Html.Attributes.map FilesDropped DropFiles.onDrop
-                    , Html.Attributes.tabindex -1
-                    , Html.Events.preventDefaultOn "keydown" (Hotkey.decode model.editor.hotkey |> D.map (\m -> ( m, True )))
-                    ]
+    IDE.UI.Html.view (Panel2.render model) model.size.w model.size.h model.layout
+        |> (Maybe.map
+                (\modal rest ->
+                    rest ++ IDE.UI.Html.modal (Panel2.render model) model.size.w model.size.h modal
+                )
+                model.modal
+                |> Maybe.withDefault identity
+           )
+        |> Html.main_ [ tabindex -1, onDrop ]
 
-        Init.Loading ->
-            Html.span [ style "font-size" "10em" ] [ Html.text "Loading..." ]
 
-        Init.Fail err ->
-            Html.span [] [ Html.text <| "FAIL:" ++ err ]
+
+--[
+--, Html.Events.preventDefaultOn "keydown" (Hotkey.decode model.editor.hotkey |> D.map (\m -> ( m, True )))
+--]
+
+
+contextmenu =
+    D.list File.decoder
+        |> D.field "files"
+        |> D.field "dataTransfer"
+        |> D.map (\files -> { message = GetFiles files, stopPropagation = True, preventDefault = True })
+        |> Html.Events.custom "contextmenu"
+
+
+onDrop : Html.Attribute Message
+onDrop =
+    D.list File.decoder
+        |> D.field "files"
+        |> D.field "dataTransfer"
+        |> D.map (\files -> { message = GetFiles files, stopPropagation = True, preventDefault = True })
+        |> Html.Events.custom "drop"

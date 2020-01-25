@@ -1,124 +1,25 @@
-module WebTiled.Svg.Tileset exposing (header, view)
+module WebTiled.Svg.Tileset exposing (image, tiles)
 
-import Dict exposing (Dict)
-import Html exposing (div)
-import Html.Lazy
-import IDE.Internal.List as List
-import Tiled.Tileset as Tileset
 import TypedSvg exposing (..)
 import TypedSvg.Attributes exposing (viewBox, xlinkHref)
 import TypedSvg.Attributes.InPx exposing (..)
 import TypedSvg.Core exposing (Svg, attribute)
-import WebTiled.DropFiles as DropFiles
 
 
-header : String -> List Tileset.Tileset -> Svg a
-header relUrl t =
-    List.indexedFoldl
-        (\i tileset acc ->
-            case tileset of
-                Tileset.Source sourceTileData ->
-                    acc
-
-                Tileset.Embedded info ->
-                    let
-                        imageId =
-                            "tileset-image[" ++ String.fromInt i ++ "]"
-                    in
-                    tilesHeader
-                        (defs []
-                            [ image
-                                [ xlinkHref <| relUrl ++ info.image
-                                , width <| toFloat info.imagewidth
-                                , height <| toFloat info.imageheight
-                                , id imageId
-                                ]
-                                []
-                            ]
-                            :: acc
-                        )
-                        imageId
-                        info
-
-                Tileset.ImageCollection imageCollectionTileData ->
-                    acc
-        )
+image : Float -> Float -> String -> String -> Svg msg
+image w h imageId url =
+    TypedSvg.image
+        [ xlinkHref <| url
+        , id imageId
+        , width w
+        , height h
+        ]
         []
-        t
-        |> svg [ width 0, height 0, viewBox 0 0 0 0 ]
 
 
-view : String -> Dict String DropFiles.File -> List Tileset.Tileset -> Int -> List (Svg msg)
-view relUrl files t activeTab =
-    List.indexedFoldl
-        (\i tileset acc ->
-            case tileset of
-                Tileset.Source sourceTileData ->
-                    acc
-
-                Tileset.Embedded info ->
-                    let
-                        lattr =
-                            if activeTab /= i then
-                                [ TypedSvg.Attributes.style "display:none" ]
-
-                            else
-                                []
-
-                        url =
-                            case Dict.get info.image files of
-                                Just (DropFiles.Image url_) ->
-                                    url_
-
-                                _ ->
-                                    relUrl ++ info.image
-                    in
-                    div lattr [ Html.Lazy.lazy3 forLazy url i info ]
-                        :: acc
-
-                Tileset.ImageCollection imageCollectionTileData ->
-                    acc
-        )
-        []
-        t
-
-
-forLazy url i info =
-    let
-        internalSpacing =
-            3
-
-        imageId =
-            "tileset-image[" ++ String.fromInt i ++ "]"
-
-        rows =
-            info.tilecount // info.columns
-
-        w =
-            toFloat (info.columns * info.tilewidth)
-                |> (+) (toFloat info.columns * internalSpacing)
-
-        h =
-            toFloat (rows * info.tileheight)
-                |> (+) (toFloat rows * internalSpacing)
-    in
-    svg
-        [ width w, height h, viewBox 0 0 w h ]
-        (defs []
-            [ image
-                [ xlinkHref <| url
-                , width <| toFloat info.imagewidth
-                , height <| toFloat info.imageheight
-                , id imageId
-                ]
-                []
-            ]
-            :: tiles internalSpacing imageId info
-        )
-
-
-tiles =
-    tiles_ ( 0, [] )
+tiles : Float -> String -> { a | firstgid : Int, tilewidth : Int, tileheight : Int, columns : Int, tilecount : Int } -> List (Svg msg)
+tiles spacing imageId =
+    tiles_ ( 0, [] ) spacing imageId
 
 
 tiles_ ( i, acc ) spacing imageId info =

@@ -1,7 +1,7 @@
-module IDE.UI.Tree exposing
-    ( Path
+module IDE.UI.Layout exposing
+    ( Layout(..)
+    , Path
     , Size
-    , Tree(..)
     , balance
     , defaultLimits
     , fromList
@@ -25,12 +25,12 @@ type alias Limit =
     }
 
 
-type Tree panel
-    = Branch Size (Many (Tree panel))
+type Layout panel
+    = Branch Size (Many (Layout panel))
     | Leaf Size Limit panel
 
 
-mapAt : Path -> (Tree panel -> Tree panel) -> Tree panel -> Tree panel
+mapAt : Path -> (Layout panel -> Layout panel) -> Layout panel -> Layout panel
 mapAt path fn tree =
     case path of
         x :: xs ->
@@ -45,7 +45,7 @@ mapAt path fn tree =
             fn tree
 
 
-balance : Int -> Int -> Tree panel -> Tree panel
+balance : Int -> Int -> Layout panel -> Layout panel
 balance w h =
     balance_
         { getLimit = getLimitsV
@@ -117,12 +117,12 @@ balance_ a b tree =
                 |> Maybe.withDefault tree
 
 
-node : panel -> Tree panel
+node : panel -> Layout panel
 node panel =
     Leaf 1 defaultLimits panel
 
 
-setLimits : Limit -> Tree panel -> Tree panel
+setLimits : Limit -> Layout panel -> Layout panel
 setLimits limit item =
     case item of
         Leaf p _ panel ->
@@ -182,7 +182,7 @@ defaultLimits =
     { xMin = 0, xMax = Nothing, yMin = 0, yMax = Nothing }
 
 
-fromList : NotEmpty (Tree panel) -> Tree panel
+fromList : NotEmpty (Layout panel) -> Layout panel
 fromList list =
     case list of
         ( item, [] ) ->
@@ -201,7 +201,7 @@ fromList list =
                 |> Branch 1
 
 
-mapSize : (Size -> Size) -> Tree panel -> Tree panel
+mapSize : (Size -> Size) -> Layout panel -> Layout panel
 mapSize fn item =
     case item of
         Branch p childs ->
@@ -211,7 +211,7 @@ mapSize fn item =
             Leaf (fn p) limit1 panel
 
 
-size : Tree panel -> Size
+size : Layout panel -> Size
 size item =
     case item of
         Branch p _ ->

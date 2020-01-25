@@ -3,8 +3,7 @@ port module RemoteStorage exposing (getFile, getFiles, storeFile, subscriptions)
 import Dict
 import Json.Decode as D
 import Json.Encode as E
-import Tiled.Level
-import WebTiled.DropFiles exposing (File(..))
+import WebTiled.Message exposing (Message(..))
 
 
 port toStore : E.Value -> Cmd msg
@@ -46,10 +45,16 @@ getFile path =
         )
 
 
+subscriptions : Sub (Result Message Message)
 subscriptions =
-    D.oneOf [ decoder, decoder2 ]
-        |> D.decodeValue
-        |> fromStore
+    fromStore
+        (D.decodeValue (D.oneOf [ decoder2, decoder ])
+            >> Result.mapError (D.errorToString >> FileError)
+        )
+
+
+
+--|>
 
 
 decoder =
@@ -58,6 +63,7 @@ decoder =
             case id of
                 "list" ->
                     D.field "data" decodeListing
+                        |> D.map RemoteStorageFileList
 
                 _ ->
                     D.fail "Unknown Key"
@@ -65,6 +71,7 @@ decoder =
         (D.field "id" D.string)
 
 
+decoder2 : D.Decoder Message
 decoder2 =
     D.field "id" (D.map2 (\id name -> ( id, name )) (D.index 0 D.string) (D.index 1 D.string))
         |> D.andThen
@@ -78,35 +85,16 @@ decoder2 =
             )
 
 
+decodeGotFile : String -> D.Decoder Message
 decodeGotFile name =
-    D.field "contentType" D.string
-        |> D.andThen
-            (\contentType ->
-                case contentType of
-                    "application/tiled.level-json" ->
-                        D.map
-                            (\data editor ->
-                                case D.decodeString Tiled.Level.decode data of
-                                    Ok l ->
-                                        { editor | files = Dict.insert name (Level l) editor.files }
-
-                                    Err _ ->
-                                        editor
-                            )
-                            (D.field "data" D.string)
-
-                    "image/base64" ->
-                        D.map
-                            (\data editor -> { editor | files = Dict.insert name (Image data) editor.files })
-                            (D.field "data" D.string)
-
-                    _ ->
-                        D.fail ""
-            )
+    D.map2 (RemoteStorageFile name)
+        (D.field "contentType" D.string)
+        (D.field "data" D.string)
 
 
+decodeListing : D.Decoder (List String)
 decodeListing =
-    D.map2 (\private public editor -> { editor | inStore = Dict.union private public })
+    D.map2 (\private public -> Dict.union private public |> Dict.keys)
         (D.field "private" decodeFiles)
         (D.field "public" decodeFiles)
 

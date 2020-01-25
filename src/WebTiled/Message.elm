@@ -1,14 +1,16 @@
-module WebTiled.Message exposing (Message(..), PreferencesTab(..))
+module WebTiled.Message exposing
+    ( Message(..)
+    , PreferencesTab(..)
+    )
 
-import IDE.UI.Tree exposing (Tree)
-import WebTiled.Kind exposing (Kind)
+import Dict exposing (Dict)
+import File exposing (File)
+import Tiled.Level
+import Tiled.Tileset
 
 
 type Message
-    = OpenModal (Tree Kind)
-    | CloseModal
-    | NewMap
-    | NewTileset
+    = NewMap
     | NewWorld
     | Open
     | OpenUrl
@@ -18,33 +20,60 @@ type Message
     | ExportAs
     | ExportAsImage
     | Reload
-    | ShowPreferences PreferencesTab
-    | ShowProperties
-    | ShowLayers
-    | ShowTilesets
-    | ShowFileManager
-    | ShowToolbar
-    | ShowStatusBar
-    | FullScreen
-    | ClearView
-    | ObjectTypesEditor
+    | AutoMap
+      --- Global Settings
     | ShowGrid
     | ShowTileAnimations
     | ShowTileCollisionShapes
-    | ResizeMap
-    | AutoMap
+      --- Screen Mode
+    | FullScreen
+    | ClearView
+      --- Modal
     | AutoMapEditor
-    | MapProperties
+    | ShowFileManager
+    | ObjectTypesEditor
+    | ResizeMap
+    | ShowPreferences PreferencesTab
+    | CloseModal
+      --- Panels
+    | ToggleToolbar
+    | ToggleStatusBar
+    | ToggleTilesets
+    | ToggleLayers
+    | ToggleProperties
+      --- Properties
+    | ShowMapProperties
+    | ShowLayerProperties
+    | ShowTilesetProperties
+      --- Layers
     | NewTileLayer
     | NewObjectLayer
     | NewImageLayer
     | DuplicateLayer
     | RemoveLayer
     | SelectPreviousLayer
+    | SelectLayer Int
     | SelectNextLayer
     | RaiseLayer
     | LowerLayer
-    | LayerProperties
+      --- Tilesets
+    | NewTileset
+    | SelectTileset Int
+      --- Files
+    | GetFiles (List File)
+    | GetFileFromUrl String
+    | FileFromUrl String Tiled.Level.Level (List ( Int, Tiled.Tileset.Tileset ))
+    | FilesFromDisk (Files Tiled.Level.Level) (Files Tiled.Tileset.Tileset) (Files String)
+    | FileError String
+      -- RemoteStorage
+    | RemoteStorageFile String String String
+    | RemoteStorageFileList (List String)
+      -- Global Subscription
+    | Resize Int Int
+
+
+type alias Files a =
+    Dict String a
 
 
 type PreferencesTab
