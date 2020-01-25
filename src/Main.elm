@@ -87,24 +87,24 @@ update msg model =
                             ( { model | level = LevelComplete (DiskLevel images) level Dict.empty }, Cmd.none )
 
                         Err err ->
-                            let
-                                _ =
-                                    Debug.log "FilesFromDisk-ERROR" err
-                            in
+                            --let
+                            --    _ =
+                            --        Debug.log "FilesFromDisk-ERROR" err
+                            --in
                             ( model, Cmd.none )
 
                 Nothing ->
-                    let
-                        _ =
-                            Debug.log "FilesFromDisk-ERROR" "NO LEVEL"
-                    in
+                    --let
+                    --    _ =
+                    --        Debug.log "FilesFromDisk-ERROR" "NO LEVEL"
+                    --in
                     ( model, Cmd.none )
 
         FileError err ->
-            let
-                _ =
-                    Debug.log "FileError" err
-            in
+            --let
+            --    _ =
+            --        Debug.log "FileError" err
+            --in
             ( model, Cmd.none )
 
         Resize w h ->
