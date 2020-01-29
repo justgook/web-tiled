@@ -74,7 +74,7 @@ module.exports = {
             init: (str) => str.replace(/#VERSION#/g, packageJson.version)
         },
         "posthtml-style-to-file": {
-            path: `${root}/game.css`,
+            path: `${root}/app.css`,
             removeStyle: "all",
         },
         "posthtml-head-elements": {
@@ -107,7 +107,7 @@ module.exports = {
                     ],
                     "link": [
                         { "rel": "icon", "href": info.favicon },
-                        { "rel": "stylesheet", href: "game.css" }
+                        { "rel": "stylesheet", href: "app.css" }
                     ],
 
                     "script": [
@@ -134,7 +134,7 @@ module.exports = {
                 orientation: "any",                                         // Default orientation: "any", "natural", "portrait" or "landscape". `string`
                 scope: "/",                                                 // set of URLs that the browser considers within your app
                 start_url: ``,                                              // Start URL when launching the application from a device. `string`
-                version: "1.0",                                             // Your application"s version string. `string`
+                version: packageJson.version,                               // Your application"s version string. `string`
                 logging: false,                                             // Print logs to console? `boolean`
                 pixel_art: true,                                            // Keeps pixels "sharp" when scaling up, for pixel art.  Only supported in offline mode.
                 loadManifestWithCredentials: false,                         // Browsers don"t send cookies when fetching a manifest, enable this to fix that. `boolean`
