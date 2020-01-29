@@ -78,9 +78,6 @@ jobs:
         prepack ./gh-pages/bundle.js --inlineExpressions --out ./gh-pages/bundle.js --maxStackDepth 1000
         uglifyjs ./gh-pages/bundle.js --compress "keep_fargs=false,unsafe_comps,unsafe" --mangle --output=./gh-pages/bundle.js
 
-    - name: Building assets
-      run: node build-assets.js
-
     - name: Building HTML
       env:
         NODE_ENV: production
@@ -88,7 +85,8 @@ jobs:
       run: |
         posthtml ./gh-pages/index2.html -o ./gh-pages/index.html -c posthtml.config.js
 
-
+    - name: Building assets
+      run: node build-assets.js
 
     - name: Deploy to GitHub Pages
       uses: JamesIves/github-pages-deploy-action@3.2.1
