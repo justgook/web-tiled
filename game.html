@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Game Runner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body, div, canvas {
+            height: 100%;
+            width: 100%;
+        }
+
+        body {
+            overscroll-behavior: none;
+        }
+    </style>
+</head>
+<body>
+<main>
+    Loading ...
+    <script type="module">
+        import {run, loadScript} from "./scripts/util.mjs"
+
+        console.log(window.opener.getFlags());
+        const { flags, file } = window.opener.getFlags();
+        loadScript(file).then(function () {
+            run(Elm)({ node: document.querySelector("main"), flags: flags });
+        });
+
+        document.addEventListener("visibilitychange", function () {
+            if (document.visibilityState === 'hidden') {
+                window.opener.console.log("Game window Close");
+                window.close();
+            }
+        });
+    </script>
+</main>
+
+</body>
+</html>

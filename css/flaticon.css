@@ -1,0 +1,118 @@
+	/*
+  	Flaticon icon font: Flaticon
+  	Creation date: 22/06/2016 15:14
+  	*/
+
+@font-face {
+  font-family: "Flaticon";
+  src: url("../fonts/Flaticon.eot");
+  src: url("../fonts/Flaticon.eot?#iefix") format("embedded-opentype"),
+       url("../fonts/Flaticon.woff") format("woff"),
+       url("../fonts/Flaticon.ttf") format("truetype"),
+       url("../fonts/Flaticon.svg#Flaticon") format("svg");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+  @font-face {
+    font-family: "Flaticon";
+    src: url("../fonts/Flaticon.svg#Flaticon") format("svg");
+  }
+}
+
+[class^="flaticon-"]:before, [class*=" flaticon-"]:before,
+[class^="flaticon-"]:after, [class*=" flaticon-"]:after {
+  font-family: Flaticon;
+}
+
+.flaticon-add-selection-cursor:before { content: "\f100"; }
+.flaticon-add-with-pen-tool:before { content: "\f101"; }
+.flaticon-anchor-points-adjustment:before { content: "\f102"; }
+.flaticon-bleed-lines:before { content: "\f103"; }
+.flaticon-brush-and-color-palette:before { content: "\f104"; }
+.flaticon-bucket-of-sand:before { content: "\f105"; }
+.flaticon-bullseye-game:before { content: "\f106"; }
+.flaticon-capital-t:before { content: "\f107"; }
+.flaticon-circle-and-cursor-arrow:before { content: "\f108"; }
+.flaticon-close-folder:before { content: "\f109"; }
+.flaticon-compass:before { content: "\f10a"; }
+.flaticon-cone:before { content: "\f10b"; }
+.flaticon-contrast-settings:before { content: "\f10c"; }
+.flaticon-crest-lower-curve:before { content: "\f10d"; }
+.flaticon-crop-lines:before { content: "\f10e"; }
+.flaticon-crop-tool:before { content: "\f10f"; }
+.flaticon-crop-tool-1:before { content: "\f110"; }
+.flaticon-cropping-target:before { content: "\f111"; }
+.flaticon-cropping-tool-point:before { content: "\f112"; }
+.flaticon-cropping-tool-point-1:before { content: "\f113"; }
+.flaticon-cursor:before { content: "\f114"; }
+.flaticon-delete-pen-tool-option:before { content: "\f115"; }
+.flaticon-design-tab:before { content: "\f116"; }
+.flaticon-document-inside-folder:before { content: "\f117"; }
+.flaticon-dotted-square:before { content: "\f118"; }
+.flaticon-draw-a-picture:before { content: "\f119"; }
+.flaticon-drawing-board-icon:before { content: "\f11a"; }
+.flaticon-drop-silhouette:before { content: "\f11b"; }
+.flaticon-edit-tool:before { content: "\f11c"; }
+.flaticon-empty-cylinder:before { content: "\f11d"; }
+.flaticon-eraser:before { content: "\f11e"; }
+.flaticon-fame-star:before { content: "\f11f"; }
+.flaticon-feather-and-ink-bottle:before { content: "\f120"; }
+.flaticon-font-size:before { content: "\f121"; }
+.flaticon-full-screen-selector:before { content: "\f122"; }
+.flaticon-handle-and-anchor:before { content: "\f123"; }
+.flaticon-hollow-cube:before { content: "\f124"; }
+.flaticon-increase-selection-size:before { content: "\f125"; }
+.flaticon-indentation-alignment:before { content: "\f126"; }
+.flaticon-loading-arrow:before { content: "\f127"; }
+.flaticon-magic-wand-with-a-star:before { content: "\f128"; }
+.flaticon-minimize:before { content: "\f129"; }
+.flaticon-modifying-a-straight-line-into-a-curve:before { content: "\f12a"; }
+.flaticon-mouse-cursor:before { content: "\f12b"; }
+.flaticon-move-selection-cursor:before { content: "\f12c"; }
+.flaticon-navigation-arrow:before { content: "\f12d"; }
+.flaticon-navigation-pointer:before { content: "\f12e"; }
+.flaticon-open-scissors:before { content: "\f12f"; }
+.flaticon-paint-board:before { content: "\f130"; }
+.flaticon-paint-board-and-brush:before { content: "\f131"; }
+.flaticon-paint-brush:before { content: "\f132"; }
+.flaticon-paint-brush-1:before { content: "\f133"; }
+.flaticon-paint-brush-dripping:before { content: "\f134"; }
+.flaticon-paint-bucket:before { content: "\f135"; }
+.flaticon-paint-bucket-1:before { content: "\f136"; }
+.flaticon-paint-bucket-2:before { content: "\f137"; }
+.flaticon-paint-roller:before { content: "\f138"; }
+.flaticon-paint-swatch:before { content: "\f139"; }
+.flaticon-pair-of-lollipops:before { content: "\f13a"; }
+.flaticon-pencil:before { content: "\f13b"; }
+.flaticon-pencil-marker:before { content: "\f13c"; }
+.flaticon-photo-shutter:before { content: "\f13d"; }
+.flaticon-picture-frame:before { content: "\f13e"; }
+.flaticon-pipette:before { content: "\f13f"; }
+.flaticon-pipette-tool:before { content: "\f140"; }
+.flaticon-radiant-sun:before { content: "\f141"; }
+.flaticon-refresh-arrow:before { content: "\f142"; }
+.flaticon-rewind-button:before { content: "\f143"; }
+.flaticon-rope-circle:before { content: "\f144"; }
+.flaticon-rotate-page:before { content: "\f145"; }
+.flaticon-rubber-stamp:before { content: "\f146"; }
+.flaticon-rubik-cube:before { content: "\f147"; }
+.flaticon-school-rule:before { content: "\f148"; }
+.flaticon-screwdriver:before { content: "\f149"; }
+.flaticon-set-square-and-protractor:before { content: "\f14a"; }
+.flaticon-share-folder:before { content: "\f14b"; }
+.flaticon-shooting-target:before { content: "\f14c"; }
+.flaticon-spiral:before { content: "\f14d"; }
+.flaticon-square-and-circle:before { content: "\f14e"; }
+.flaticon-square-and-lines:before { content: "\f14f"; }
+.flaticon-square-circle-and-triangle:before { content: "\f150"; }
+.flaticon-square-with-rounded-sides:before { content: "\f151"; }
+.flaticon-squares-grid:before { content: "\f152"; }
+.flaticon-text-tool:before { content: "\f153"; }
+.flaticon-text-tool-1:before { content: "\f154"; }
+.flaticon-tip-pen:before { content: "\f155"; }
+.flaticon-triangle-divided-in-two-parts:before { content: "\f156"; }
+.flaticon-twirl-grid:before { content: "\f157"; }
+.flaticon-type-box:before { content: "\f158"; }
+.flaticon-underline-text:before { content: "\f159"; }

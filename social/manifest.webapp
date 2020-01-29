@@ -1,0 +1,14 @@
+{
+  "version": "1.4.0",
+  "name": "WebTiled Editor",
+  "description": "WebTiled is a general purpose tile map editor for all tile-based games, such as RPGs, platformers or Breakout clones.",
+  "icons": {
+    "60": "/social/firefox_app_60x60.png",
+    "128": "/social/firefox_app_128x128.png",
+    "512": "/social/firefox_app_512x512.png"
+  },
+  "developer": {
+    "name": "Romāns Potašovs",
+    "url": "https://github.com/justgook"
+  }
+}
