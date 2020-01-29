@@ -23,7 +23,11 @@ const server = http.createServer((req, res) => {
             process.exit(-1);
             return;
         }
-        res.writeHead(200);
+        res.writeHead(200,
+            path.endsWith(".mjs")
+                ? { "Content-Type": "application/javascript; charset=utf-8" }
+                : {}
+        );
         res.end(fs.readFileSync(path));
     })
 
@@ -39,8 +43,8 @@ function screenshot(done) {
     const url = `http://localhost:${port}/`;
     const preview = new Pageres({
         filename: "preview",
-        delay: 5,
-        css: `body::after{content: "Version: ${packageJson.version} (${revision})"; position:absolute; bottom: 10px; left:10px}`
+        delay: 2,
+        css: `body::after{content: "Version: ${packageJson.version} (${revision})"; position:absolute; bottom: 5px; left:10px}`
     })
         .src(url, ['1200x675'])
         .dest(`${__dirname}/gh-pages`)
