@@ -23,7 +23,7 @@ documentation.json
 /index.html
 gh-pages/*
 !gh-pages/404.html
-!gh-pages/index.html
+!gh-pages/index_template.html
 !gh-pages/game.html
 !gh-pages/game.css
 !gh-pages/script.js
