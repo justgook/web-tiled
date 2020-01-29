@@ -43,7 +43,7 @@ export default async function (version) {
     flags.version = version;
     const app = Object.values(Elm)[0].init({
         node: document.querySelector("main"),
-        flags: {flags}
+        flags: flags
     });
 
     app.ports.build.subscribe(({ level, build, run }) => {
