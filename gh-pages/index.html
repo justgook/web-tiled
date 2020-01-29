@@ -114,7 +114,7 @@
 
 <body>
 <script type="module" src="scripts/index.mjs"></script>
-<script type="module">
+<script type="module" initScript>
     var redirect = sessionStorage.redirect;
     delete sessionStorage.redirect;
     if (redirect && redirect !== location.href) {
@@ -122,7 +122,7 @@
     }
     import start from "./scripts/index.mjs";
 
-    start();
+    start("#VERSION#");
 
 </script>
 

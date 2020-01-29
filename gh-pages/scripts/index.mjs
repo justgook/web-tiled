@@ -37,13 +37,13 @@ const buildWorker = BuildWorker.init();
 
 const defaultConfig = { file: "hello.json" };
 
-export default async function () {
+export default async function (version) {
     await loadScript("bundle.js");
     ////----APPLICATION -----
-
+    flags.version = version;
     const app = Object.values(Elm)[0].init({
         node: document.querySelector("main"),
-        flags: flags
+        flags: {flags}
     });
 
     app.ports.build.subscribe(({ level, build, run }) => {
