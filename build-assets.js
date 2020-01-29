@@ -39,7 +39,7 @@ function screenshot(done) {
     const url = `http://localhost:${port}/`;
     const preview = new Pageres({
         filename: "preview",
-        delay: 1,
+        delay: 3,
         css: `body::after{content: "Version: ${packageJson.version} (${revision})"; position:absolute; bottom: 10px; left:10px}`
     })
         .src(url, ['1200x675'])
