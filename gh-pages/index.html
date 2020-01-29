@@ -114,7 +114,7 @@
 
 <body>
 <script type="module" src="scripts/index.mjs"></script>
-<script type="module" initScript>
+<script init type="module">
     var redirect = sessionStorage.redirect;
     delete sessionStorage.redirect;
     if (redirect && redirect !== location.href) {
