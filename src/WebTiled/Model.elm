@@ -25,6 +25,12 @@ type alias Model =
     , modal : Maybe (UI.Layout Kind)
     , layout : UI.Layout Kind
 
+    --- Running
+    , build :
+        { selected : RunTemplate
+        , rest : List RunTemplate
+        }
+
     --, files : Dict String ParsedFile
     --, inStore : Dict String (Maybe String)
     ----
@@ -48,9 +54,14 @@ init flags =
     , size = { w = 800, h = 600 }
     , modal = Nothing --Just (UI.node FakeProgress |> UI.setLimits { yMax = Just 200, yMin = 200, xMax = Just 200, xMin = 200 })
     , layout = UI.node Error
+    , build = { selected = { build = "", run = "", name = "" }, rest = [] }
     , remoteStorage = Offline
     , version = version
     }
+
+
+type alias RunTemplate =
+    { name : String, build : String, run : String }
 
 
 type LevelFrom
@@ -80,6 +91,7 @@ type PropertiesFor
 
 type Kind
     = MainTools
+    | RunTools
     | TileLayerTools
     | CloudTools
     | Statusbar

@@ -29,7 +29,9 @@ gh-pages/*
 !gh-pages/script.js
 !gh-pages/.gitignore
 !gh-pages/favicon.png
+!gh-pages/scripts/
 
-!gh-pages/top-down-adventure
+
+
 #remotestorage.io
 armadietto/

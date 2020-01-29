@@ -21,6 +21,8 @@ type Message
     | ExportAsImage
     | Reload
     | AutoMap
+    | Run
+    | SetRunScript Int
       --- Global Settings
     | ShowGrid
     | ShowTileAnimations

@@ -4,9 +4,11 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 
 
-panel : Int -> Int -> String -> Html msg -> Html msg
-panel w h title content =
-    bare w
+panel : Int -> Int -> Int -> Int -> String -> Html msg -> Html msg
+panel x y w h title content =
+    bare x
+        y
+        w
         h
         [ header [ class "toolbar toolbar-header" ]
             [ h1 [ class "title" ]
@@ -22,8 +24,8 @@ panel w h title content =
         ]
 
 
-bare : Int -> Int -> List (Html msg) -> Html msg
-bare w h =
+bare : Int -> Int -> Int -> Int -> List (Html msg) -> Html msg
+bare x y w h =
     let
         setWidth width =
             String.fromInt width ++ "px" |> style "width"
@@ -36,7 +38,16 @@ bare w h =
         , setHeight h
         , style "display" "flex"
         , style "flex-flow" "column"
-        , style "position" "relative"
+        , style "width" <| px w
+        , style "height" <| px h
+        , style "top" <| px y
+        , style "left" <| px x
+        , style "position" "absolute"
 
         --, draggable "true"
         ]
+
+
+px : Int -> String
+px i =
+    String.fromInt i ++ "px"

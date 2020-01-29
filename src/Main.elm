@@ -9,9 +9,11 @@ import File.Select
 import Html exposing (Html)
 import Html.Attributes exposing (tabindex)
 import Html.Events
+import IDE.Internal.List as List
 import IDE.UI.Html
 import IDE.UI.Layout as UI exposing (Layout)
 import Json.Decode as D
+import Port.BuildRun
 import RemoteStorage as RS
 import Task
 import WebTiled.Message exposing (Message(..))
@@ -107,6 +109,29 @@ update msg model =
             --in
             ( model, Cmd.none )
 
+        Run ->
+            case model.level of
+                LevelComplete _ level _ ->
+                    ( model, Port.BuildRun.levelBuild model.build.selected level )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        SetRunScript i ->
+            let
+                build =
+                    model.build
+            in
+            ( { model
+                | build =
+                    build.rest
+                        |> List.getAt i
+                        |> Maybe.map (\item -> { build | selected = item })
+                        |> Maybe.withDefault build
+              }
+            , Cmd.none
+            )
+
         Resize w h ->
             ( { model
                 | layout = UI.balance w h model.layout
@@ -126,6 +151,29 @@ init flags =
             D.decodeValue (D.field "levelUrl" D.string) flags
                 |> Result.withDefault "top-down-adventure/demo.json"
 
+        runScripts =
+            { selected =
+                { build = "https://justgook.github.io/new-age/JumpGun/build.js"
+                , run = "https://justgook.github.io/new-age/JumpGun/game.js"
+                , name = "Lut builder"
+                }
+            , rest =
+                [ { build = "https://justgook.github.io/new-age/JumpGun/build.js"
+                  , run = "https://justgook.github.io/new-age/JumpGun/game.js"
+                  , name = "Lut builder"
+                  }
+
+                --, { build = "http://localhost:8002/bundle.js"
+                --  , run = "http://localhost:8003/game.js"
+                --  , name = "RPG"
+                --  }
+                --, { build = "http://localhost:8002/bundle.js"
+                --  , run = "http://localhost:8003/game.js"
+                --  , name = "SHMUP"
+                --  }
+                ]
+            }
+
         left =
             UI.fromList ( Panel2.properties, [ Panel2.fileManager ] )
 
@@ -142,7 +190,10 @@ init flags =
             Model.init flags
                 |> update (WebTiled.Message.GetFileFromUrl url)
     in
-    ( { m | layout = layout }
+    ( { m
+        | layout = layout
+        , build = runScripts
+      }
     , [ cmd
       , RS.getFiles
       , Browser.getViewport |> Task.perform (\{ scene } -> Resize (round scene.width) (round scene.height))

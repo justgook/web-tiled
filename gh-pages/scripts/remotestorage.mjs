@@ -1,15 +1,7 @@
-function loadScript(src) {
-    return new Promise(function (resolve, reject) {
-        var s;
-        s = document.createElement("script");
-        s.src = src;
-        s.onload = resolve;
-        s.onerror = reject;
-        document.head.appendChild(s);
-    });
-}
+import {loadScript} from "./util.mjs";
 
-function initRemoteStorage() {
+
+export function initRemoteStorage() {
     return loadScript("https://unpkg.com/remotestoragejs@1.2.2/release/remotestorage.js")
         .then(() => {
             const dataPath = "web-tiled";
@@ -18,12 +10,10 @@ function initRemoteStorage() {
             remoteStorage.caching.enable(`/${dataPath}/`);
             remoteStorage.api = remoteStorage["web-tiled"];
             return remoteStorage;
-
-
         });
 }
 
-function createWidget(remoteStorage) {
+export function createWidget(remoteStorage) {
     loadScript("https://unpkg.com/remotestorage-widget@1.4.0/build/widget.js").then(() => {
         const widget = new Widget(remoteStorage);
         widget.attach();

@@ -11,6 +11,7 @@ module IDE.UI.Layout exposing
     , mapSize
     , node
     , setLimits
+    , size
     )
 
 import IDE.Internal.Many as Many exposing (Many)
@@ -25,9 +26,9 @@ type alias Limit =
     }
 
 
-type Layout panel
-    = Branch Size (Many (Layout panel))
-    | Leaf Size Limit panel
+type Layout node
+    = Layout Size (Many (Layout node))
+    | Node Size Limit node
 
 
 mapAt : Path -> (Layout panel -> Layout panel) -> Layout panel -> Layout panel
@@ -35,10 +36,10 @@ mapAt path fn tree =
     case path of
         x :: xs ->
             case tree of
-                Branch p childs ->
-                    Branch p (Many.updateAt x (mapAt xs fn) childs)
+                Layout p childs ->
+                    Layout p (Many.updateAt x (mapAt xs fn) childs)
 
-                Leaf _ _ _ ->
+                Node _ _ _ ->
                     tree
 
         [] ->
@@ -66,7 +67,7 @@ balance_ a b tree =
             a.getLimit tree
     in
     case tree of
-        Branch p childs ->
+        Layout p childs ->
             childs
                 |> Many.map
                     (\i ->
@@ -107,28 +108,28 @@ balance_ a b tree =
                                     )
                    )
                 |> (a.getMax limit
-                        |> Maybe.map (\value -> Branch (toFloat value / toFloat a.value))
-                        |> Maybe.withDefault (Branch p)
+                        |> Maybe.map (\value -> Layout (toFloat value / toFloat a.value))
+                        |> Maybe.withDefault (Layout p)
                    )
 
-        Leaf _ l panel ->
+        Node _ l panel ->
             a.getMax limit
-                |> Maybe.map (\value -> Leaf (toFloat value / toFloat a.value) l panel)
+                |> Maybe.map (\value -> Node (toFloat value / toFloat a.value) l panel)
                 |> Maybe.withDefault tree
 
 
 node : panel -> Layout panel
 node panel =
-    Leaf 1 defaultLimits panel
+    Node 1 defaultLimits panel
 
 
 setLimits : Limit -> Layout panel -> Layout panel
 setLimits limit item =
     case item of
-        Leaf p _ panel ->
-            Leaf p limit panel
+        Node p _ panel ->
+            Node p limit panel
 
-        Branch _ _ ->
+        Layout _ _ ->
             item
 
 
@@ -154,10 +155,10 @@ getLimitsV tree =
 
 calcLimit fn1 fn2 init1 init2 tree was =
     case tree of
-        Leaf _ limit _ ->
+        Node _ limit _ ->
             fn1 was limit
 
-        Branch _ childs ->
+        Layout _ childs ->
             Many.foldl (calcLimit fn2 fn1 init2 init1) init2 childs
                 |> fn1 was
 
@@ -198,26 +199,26 @@ fromList list =
             in
             Many.init item1 item2 rest
                 |> Many.map (mapSize fn)
-                |> Branch 1
+                |> Layout 1
 
 
 mapSize : (Size -> Size) -> Layout panel -> Layout panel
 mapSize fn item =
     case item of
-        Branch p childs ->
-            Branch (fn p) childs
+        Layout p childs ->
+            Layout (fn p) childs
 
-        Leaf p limit1 panel ->
-            Leaf (fn p) limit1 panel
+        Node p limit1 panel ->
+            Node (fn p) limit1 panel
 
 
 size : Layout panel -> Size
 size item =
     case item of
-        Branch p _ ->
+        Layout p _ ->
             p
 
-        Leaf p _ _ ->
+        Node p _ _ ->
             p
 
 

@@ -8,8 +8,8 @@ import WebTiled.Message exposing (Message(..))
 import WebTiled.Panel.Generic as Generic
 
 
-view : Int -> Int -> List Int -> List Layer.Layer -> Html Message
-view w h selected =
+view : List Int -> List Layer.Layer -> Html Message
+view selected =
     List.indexedMap
         (\i layer ->
             case layer of
@@ -28,7 +28,6 @@ view w h selected =
         >> nav [ class "nav-group sidebar" ]
         >> List.singleton
         >> div []
-        >> Generic.panel w h "Layers"
 
 
 item icon name selected i =

@@ -70,9 +70,9 @@ const buildSocialTags = ({ url, image, title, description, version, license, twi
 
 module.exports = {
     plugins: {
-        // "posthtml-content": {
-        //     start: (str) => str.replace(/#GAME_URL#/g, `${process.env.GAME}.age.bin`)
-        // },
+        "posthtml-content": {
+            start: (str) => str.replace(/#VERSION#/g, packageJson.version)
+        },
         "posthtml-style-to-file": {
             path: `${root}/game.css`,
             removeStyle: "all",

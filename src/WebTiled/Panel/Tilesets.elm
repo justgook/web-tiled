@@ -16,13 +16,12 @@ import WebTiled.Panel.Generic as Generic
 import WebTiled.Svg.Tileset
 
 
-view : Int -> Int -> Int -> List Tileset.Tileset -> Dict Int Tileset.Tileset -> Html Message
-view w h selected tilesets external =
+view : Int -> List Tileset.Tileset -> Dict Int Tileset.Tileset -> Html Message
+view selected tilesets external =
     [ Lazy.lazy3 viewTabs selected tilesets external
     , Lazy.lazy3 viewContent selected tilesets external
     ]
         |> div []
-        |> Generic.panel w h "Tilesets"
 
 
 viewContent : Int -> List Tileset.Tileset -> Dict Int Tileset.Tileset -> Html msg
@@ -122,7 +121,11 @@ content active external i tileset acc =
 
                 lattr =
                     if active /= i then
-                        [ DragScale.apply m, style "display" "none" ]
+                        [ DragScale.apply m
+                        , style "visibility" "hidden"
+                        , style "position" "absolute"
+                        , style "top" "0"
+                        ]
 
                     else
                         [ DragScale.apply m ]

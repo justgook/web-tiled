@@ -7,8 +7,8 @@ import Tiled.Properties exposing (Properties, Property(..))
 import WebTiled.Panel.Generic
 
 
-properties : String -> Properties -> Int -> Int -> List (Html msg) -> Html msg
-properties mainText props2 w h props1 =
+properties : String -> Properties -> Int -> Int -> Int -> Int -> List (Html msg) -> Html msg
+properties mainText props2 x y w h props1 =
     table [ class "table-striped" ]
         [ thead []
             [ tr []
@@ -45,7 +45,7 @@ properties mainText props2 w h props1 =
             ]
         , tbody [] (custom props2)
         ]
-        |> WebTiled.Panel.Generic.panel w h "Properties"
+        |> WebTiled.Panel.Generic.panel x y w h "Properties"
 
 
 custom : Properties -> List (Html msg)

@@ -4,20 +4,19 @@ import Html exposing (..)
 import Html.Attributes exposing (class, style)
 import Html.Lazy
 import IDE.Internal.Many as Many exposing (Many)
-import IDE.UI.Layout as Tree exposing (Layout(..))
+import IDE.UI.Layout as Layout exposing (Layout(..))
 
 
-view : (Int -> Int -> panel -> Html msg) -> Int -> Int -> Layout panel -> List (Html msg)
+view : (Int -> Int -> Int -> Int -> node -> a) -> Int -> Int -> Layout node -> List a
 view fn w h m =
     wrapper fn w h m
-        |> (::) (Html.Lazy.lazy css ())
 
 
-modal : (Int -> Int -> panel -> Html msg) -> Int -> Int -> Layout panel -> List (Html msg)
+modal : (Int -> Int -> Int -> Int -> node -> Html msg) -> Int -> Int -> Layout node -> List (Html msg)
 modal fn w_ h_ m =
     let
         { xMax, yMax, xMin, yMin } =
-            Tree.getLimitsV m
+            Layout.getLimitsV m
 
         w =
             Maybe.map (min (w_ // 4 * 3)) xMax
@@ -38,7 +37,7 @@ modal fn w_ h_ m =
     ]
 
 
-wrapper : (Int -> Int -> panel -> Html msg) -> Int -> Int -> Layout panel -> List (Html msg)
+wrapper : (Int -> Int -> Int -> Int -> node -> a) -> Int -> Int -> Layout node -> List a
 wrapper fn w h m =
     let
         pxW p a =
@@ -47,68 +46,62 @@ wrapper fn w h m =
         pxH _ a =
             a
     in
-    wrapper_ fn pxW pxH w h m
+    wrapper_ fn pxW pxH w h 0 0 m
 
 
-wrapper_ : (Int -> Int -> panel -> Html msg) -> (Tree.Size -> Int -> Int) -> (Tree.Size -> Int -> Int) -> Int -> Int -> Layout panel -> List (Html msg)
-wrapper_ fn pxW pxH w_ h_ m =
-    case m of
-        Branch p childs ->
+wrapper_ : (number -> number -> number -> number -> node -> a) -> (Layout.Size -> number -> number) -> (Layout.Size -> number -> number) -> number -> number -> number -> number -> Layout node -> List a
+wrapper_ fn applyW applyH w_ h_ x y tree =
+    case tree of
+        Layout p childs ->
             let
                 w =
-                    pxW p w_
+                    applyW p w_
 
                 h =
-                    pxH p h_
+                    applyH p h_
             in
-            [ div
-                [ style "width" <| px w
-                , style "height" <| px h
-                , class "panels"
-                ]
-                (Many.foldl (wrapper_ fn pxH pxW w h >> flip (++)) [] childs)
-            ]
+            Many.foldl (wrapperFold fn applyH applyW w h (h == h_)) ( [], ( x, y ) ) childs
+                |> Tuple.first
 
-        Leaf p _ kind ->
+        Node p _ kind ->
             let
                 w =
-                    pxW p w_
+                    applyW p w_
 
                 h =
-                    pxH p h_
+                    applyH p h_
             in
-            [ div
-                [ style "width" <| px w
-                , style "height" <| px h
-                , class "content"
-                ]
-                [ fn w h kind ]
-            ]
+            [ fn w h x y kind ]
 
 
-flip fn a b =
-    fn b a
+wrapperFold :
+    (number -> number -> number -> number -> node -> a)
+    -> (Layout.Size -> number -> number)
+    -> (Layout.Size -> number -> number)
+    -> number
+    -> number
+    -> Bool
+    -> Layout node
+    -> ( List a, ( number, number ) )
+    -> ( List a, ( number, number ) )
+wrapperFold fn applyW applyH w h isVertical tree ( acc, ( x2, y2 ) ) =
+    let
+        p =
+            Layout.size tree
+
+        xy =
+            if isVertical then
+                ( x2, y2 + applyH p h )
+
+            else
+                ( x2 + applyW p w, y2 )
+    in
+    ( acc ++ wrapper_ fn applyW applyH w h x2 y2 tree, xy )
 
 
 px : Int -> String
 px i =
     String.fromInt i ++ "px"
-
-
-css : () -> Html msg
-css _ =
-    [ text """
-.panels {
-   float:left;
-   position:relative;
-}
-.content {
-    float:left;
-    position:relative;
-}
-
-""" ]
-        |> Html.node "style" []
 
 
 modalCss : () -> Html msg
