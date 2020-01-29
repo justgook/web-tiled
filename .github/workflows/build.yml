@@ -86,9 +86,8 @@ jobs:
         NODE_ENV: production
         GAME_URL: "https://tiled.z0.lv/"
       run: |
-        cp ./gh-pages/index.html ./gh-pages/index2.html
         posthtml ./gh-pages/index2.html -o ./gh-pages/index.html -c posthtml.config.js
-        rm ./gh-pages/index2.html
+
 
 
     - name: Deploy to GitHub Pages
