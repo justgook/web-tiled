@@ -13,9 +13,16 @@ init =
     []
 
 
-view : Model -> Html msg
+view : Model -> List (Html msg)
 view model =
-    table [ class "table-striped" ]
+    [ div [ class " padded-less" ]
+        [ select [ class "form-control" ]
+            [ option [] [ text "Custom..." ]
+            , option [] [ text "MacOS" ]
+            , option [] [ text "Windows" ]
+            ]
+        ]
+    , table [ class "table-striped" ]
         [ thead []
             [ tr []
                 [ th [] [ text "Action" ]
@@ -34,3 +41,4 @@ view model =
                 )
             |> tbody []
         ]
+    ]

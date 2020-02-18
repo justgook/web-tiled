@@ -4,12 +4,14 @@ module WebTiled.Model exposing
     , LevelFrom(..)
     , Model
     , PropertiesFor(..)
+    , RemoteStorageStatus(..)
     , init
     )
 
 import Dict exposing (Dict)
 import IDE.UI.Layout as UI
 import Json.Decode as D
+import Set exposing (Set)
 import Tiled.Level
 import Tiled.Tileset
 import WebTiled.Message exposing (PreferencesTab(..))
@@ -55,7 +57,7 @@ init flags =
     , modal = Nothing --Just (UI.node FakeProgress |> UI.setLimits { yMax = Just 200, yMin = 200, xMax = Just 200, xMin = 200 })
     , layout = UI.node Error
     , build = { selected = { build = "", run = "", name = "" }, rest = [] }
-    , remoteStorage = Offline
+    , remoteStorage = { status = Connecting, userName = "", files = [] }
     , version = version
     }
 
@@ -65,16 +67,20 @@ type alias RunTemplate =
 
 
 type LevelFrom
-    = UrlLevel String
-    | DiskLevel (Dict String String)
-    | RemoteStorageLevel (Dict String String)
+    = UrlLevel String String
+    | DiskLevel Images
+    | RemoteStorageLevel Images
 
 
 type CurrentLevel
     = LevelComplete LevelFrom Tiled.Level.Level (Dict Int Tiled.Tileset.Tileset)
-    | LevelPartial LevelFrom Tiled.Level.Level (Dict Int Tiled.Tileset.Tileset) (List String)
-    | LevelLoading LevelFrom Tiled.Level.Level (Dict Int (Maybe Tiled.Tileset.Tileset)) (Dict String (Maybe String))
+    | LevelPartial LevelFrom Tiled.Level.Level (Dict String Tiled.Tileset.Tileset) (List String)
+    | LevelLoading LevelFrom Tiled.Level.Level (Dict String Tiled.Tileset.Tileset) Images FilesInProgress
     | LevelNone
+
+
+type alias FilesInProgress =
+    Set String
 
 
 type alias Images =
@@ -107,7 +113,15 @@ type Kind
     | Error
 
 
-type RemoteStorage
+type alias RemoteStorage =
+    { status : RemoteStorageStatus
+    , files : List String
+    , userName : String
+    }
+
+
+type RemoteStorageStatus
     = Offline
     | Connecting
     | Online
+    | Syncing

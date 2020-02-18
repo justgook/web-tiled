@@ -1,9 +1,11 @@
 module WebTiled.Panel.TopMenu exposing (view)
 
+import Html exposing (Html)
 import IDE.UI.TopMenu exposing (MenuItem(..))
 import WebTiled.Message exposing (Message(..), PreferencesTab(..))
 
 
+view : Html Message
 view =
     [ MenuItem True
         Nothing
@@ -18,7 +20,7 @@ view =
         , MenuItem True (Just Open) "Open..." []
         , MenuItem False Nothing "Open Url..." []
         , Separator
-        , MenuItem False Nothing "Save" []
+        , MenuItem True (Just Save) "Save" []
         , MenuItem False Nothing "Save As..." []
         , MenuItem False Nothing "Export" []
         , MenuItem False Nothing "Export As..." []
@@ -98,7 +100,12 @@ view =
     , MenuItem True
         Nothing
         "Help"
-        [ MenuItem False Nothing "Examples" []
+        [ MenuItem True
+            Nothing
+            "Examples"
+            [ MenuItem True (Just (GetFileFromUrl "https://raw.githubusercontent.com/z0lv/-age-platformer-puzzle/tiled/demo.json")) "Platformer" []
+            , MenuItem True (Just (GetFileFromUrl "https://raw.githubusercontent.com/z0lv/-age-top-down-adventure/tiled/demo.json")) "RPG" []
+            ]
         , MenuItem False Nothing "Tutorial" []
         ]
     ]

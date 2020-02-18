@@ -1,4 +1,4 @@
-module WebTiled.Util.File exposing (getLevel, validate)
+module WebTiled.Util.File exposing (getLevel)
 
 import Dict
 import File exposing (File)
@@ -41,22 +41,6 @@ getLevel files =
             )
 
 
-validate : Level -> Dict.Dict String v -> Dict.Dict String a -> Result (List String) Level
-validate level tilesets images =
-    let
-        missing =
-            Dict.keys images
-                |> Set.fromList
-                |> Set.diff (TiledUtil.dependencies level)
-                |> flip Set.diff (Set.fromList (Dict.keys tilesets))
-    in
-    if Set.isEmpty missing then
-        Ok level
-
-    else
-        Err (Set.toList missing)
-
-
 parseFile ( name, file ) ( levels, tilesets, images ) =
     if String.endsWith ".json" name then
         case D.decodeString Tiled.decode file of
@@ -78,8 +62,3 @@ parseFile ( name, file ) ( levels, tilesets, images ) =
 uncurry3 : (a -> b -> c -> d) -> ( a, b, c ) -> d
 uncurry3 fn ( a, b, c ) =
     fn a b c
-
-
-flip : (c -> b -> a) -> b -> c -> a
-flip fn a b =
-    fn b a

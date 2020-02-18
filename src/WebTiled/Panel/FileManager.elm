@@ -1,62 +1,45 @@
-module WebTiled.Panel.FileManager exposing (Model, init, view)
+module WebTiled.Panel.FileManager exposing (view)
 
 import Dict exposing (Dict)
 import Html exposing (..)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
 import RemoteStorage
+import WebTiled.Message exposing (Message(..))
 
 
-type alias Model =
-    ()
-
-
-init : Model
-init =
-    ()
-
-
-
---view : Model -> Dict String File -> Dict String (Maybe File) -> Html (Model -> Model)
-
-
-view m files inStore =
+view files =
     table [ class "table-striped" ]
         [ thead []
             [ tr []
                 [ th []
                     [ text "Name" ]
-                , th []
-                    [ text "Kind" ]
+
+                --, th []
+                --    [ text "Kind" ]
                 , th []
                     [ text "Action" ]
                 ]
             ]
-        , Dict.foldl
-            (\name v ->
-                (::) <|
-                    tr [ onClick (loadFile name), class "no-delay" ]
-                        [ td []
+        , files
+            |> List.map
+                (\name ->
+                    tr [ class "no-delay" ]
+                        [ td [ onClick (GetFileRemoteStorage name) ]
                             (if String.endsWith "/" name then
-                                [ span [ class "icon icon-folder" ] [], text name ]
+                                [ span [ class "icon icon-folder" ] [], text ((++) " " <| String.replace "/" "" name) ]
 
                              else
                                 [ text name ]
                             )
-                        , td []
-                            [ text "image" ]
+
+                        --, td []
+                        --    [ text "unknown" ]
                         , td []
                             [ span [ class "icon icon-download" ] []
                             , span [ class "icon icon-trash" ] []
                             ]
                         ]
-            )
-            []
-            inStore
+                )
             |> tbody []
         ]
-
-
-loadFile : String -> b -> ( b, Cmd msg )
-loadFile name e =
-    ( e, RemoteStorage.getFile name )

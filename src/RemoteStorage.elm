@@ -1,8 +1,9 @@
-port module RemoteStorage exposing (getFile, getFiles, storeFile, subscriptions)
+port module RemoteStorage exposing (connect, disconnect, getFile, getFiles, saveLevel, storeFile, subscriptions)
 
 import Dict
 import Json.Decode as D
 import Json.Encode as E
+import Tiled.Level as Tiled
 import WebTiled.Message exposing (Message(..))
 
 
@@ -21,6 +22,44 @@ getFiles =
             , ( "params", E.list identity [] )
             ]
         )
+
+
+connect : String -> Cmd msg
+connect userAddress =
+    toStore
+        (E.object
+            [ ( "method", E.string "connect" )
+            , ( "id", E.string "connect" )
+            , ( "params", E.list identity [ E.string userAddress ] )
+            ]
+        )
+
+
+disconnect : Cmd msg
+disconnect =
+    toStore
+        (E.object
+            [ ( "method", E.string "disconnect" )
+            , ( "id", E.string "disconnect" )
+            , ( "params", E.list identity [] )
+            ]
+        )
+
+
+saveLevel : ( String, Tiled.Level ) -> List ( String, String ) -> List ( String, String ) -> Cmd msg
+saveLevel ( levelPath, level ) images =
+    List.foldl
+        (\( path, content ) ->
+            (::) (storeFile "application/tiled.tileset-json" path content)
+        )
+        (List.foldl (\( path, content ) -> (::) (storeFile "image/base64" path content))
+            [ Tiled.encode level
+                |> E.encode 0
+                |> storeFile "application/tiled.level-json" levelPath
+            ]
+            images
+        )
+        >> Cmd.batch
 
 
 storeFile : String -> String -> String -> Cmd msg
@@ -45,30 +84,47 @@ getFile path =
         )
 
 
-subscriptions : Sub (Result Message Message)
+subscriptions : Sub Message
 subscriptions =
-    fromStore
-        (D.decodeValue (D.oneOf [ decoder2, decoder ])
-            >> Result.mapError (D.errorToString >> FileError)
-        )
+    fromStore (D.decodeValue (D.oneOf [ decoder2, decoder ]) >> Result.mapError (D.errorToString >> FileError))
+        |> Sub.map
+            (\result ->
+                case result of
+                    Ok msg ->
+                        msg
+
+                    Err msg ->
+                        msg
+            )
 
 
-
---|>
-
-
+decoder : D.Decoder Message
 decoder =
-    D.andThen
-        (\id ->
-            case id of
-                "list" ->
-                    D.field "data" decodeListing
-                        |> D.map RemoteStorageFileList
+    D.field "id" D.string
+        |> D.andThen
+            (\id ->
+                case id of
+                    "list" ->
+                        D.field "data" decodeListing
+                            |> D.map RemoteStorageFileList
 
-                _ ->
-                    D.fail "Unknown Key"
-        )
-        (D.field "id" D.string)
+                    "not-connected" ->
+                        D.succeed RemoteStorageOffline
+
+                    "connected" ->
+                        D.at [ "data", "userAddress" ] D.string
+                            |> D.map RemoteStorageOnline
+
+                    "wire-busy" ->
+                        D.succeed RemoteStorageSyncing
+
+                    "sync-done" ->
+                        D.succeed RemoteStorageSyncDone
+
+                    key ->
+                        RemoteStorageUnhandledEvent key
+                            |> D.succeed
+            )
 
 
 decoder2 : D.Decoder Message
@@ -78,7 +134,7 @@ decoder2 =
             (\( id, name ) ->
                 case id of
                     "getFile" ->
-                        D.field "data" (decodeGotFile name)
+                        D.oneOf [ D.field "data" (decodeGotFile name), D.succeed (FileMissing name) ]
 
                     _ ->
                         D.fail "Unknown Key"

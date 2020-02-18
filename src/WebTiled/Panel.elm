@@ -20,11 +20,14 @@ import IDE.UI.Layout as UI
 import Tiled.Layer exposing (Layer(..))
 import Tiled.Level exposing (Level)
 import Tiled.Tileset as Tileset
-import WebTiled.Message exposing (Message(..))
+import WebTiled.Message exposing (Message(..), PreferencesTab(..))
 import WebTiled.Model exposing (CurrentLevel(..), Kind(..), LevelFrom(..), Model, PropertiesFor(..))
+import WebTiled.Panel.FileManager
 import WebTiled.Panel.Generic
 import WebTiled.Panel.Layers
 import WebTiled.Panel.Preferences
+import WebTiled.Panel.Preferences.Account
+import WebTiled.Panel.Preferences.Keyboard as Keyboard
 import WebTiled.Panel.Preview
 import WebTiled.Panel.Progress
 import WebTiled.Panel.Properties.Generic
@@ -38,6 +41,7 @@ import WebTiled.Panel.Toolbar.Run
 import WebTiled.Panel.Toolbar.TileLayer
 import WebTiled.Panel.Toolbar.Tools
 import WebTiled.Panel.TopMenu
+import WebTiled.RenameMe
 import WebTiled.Util.Tiled as TiledUtil
 
 
@@ -110,7 +114,8 @@ render model w h x y kind =
             WebTiled.Panel.Progress.view
 
         ( TopMenu, _ ) ->
-            WebTiled.Panel.TopMenu.view
+            [ WebTiled.Panel.TopMenu.view ]
+                |> wrapper x y w h
 
         ( Preview, LevelComplete _ level _ ) ->
             [ WebTiled.Panel.Preview.view (TiledUtil.getLevelData level) ]
@@ -125,7 +130,22 @@ render model w h x y kind =
                 |> WebTiled.Panel.Generic.panel x y w h "Layers"
 
         ( Preferences, _ ) ->
-            WebTiled.Panel.Preferences.view model.settings
+            let
+                keyboardModel =
+                    WebTiled.RenameMe.shortcuts
+                        |> Dict.foldl (\k v acc -> { name = k, context = "Global", shortcut = v.shortcut } :: acc) []
+            in
+            (case model.settings of
+                Keyboard ->
+                    Keyboard.view keyboardModel
+
+                Account ->
+                    [ WebTiled.Panel.Preferences.Account.view model.remoteStorage.status model.remoteStorage.userName ]
+
+                _ ->
+                    [ div [] [ text "Not Implemented" ] ]
+            )
+                |> WebTiled.Panel.Preferences.view model.settings
 
         ( RunTools, _ ) ->
             [ WebTiled.Panel.Toolbar.Run.view model.build ]
@@ -140,7 +160,7 @@ render model w h x y kind =
                 |> wrapper x y w h
 
         ( CloudTools, _ ) ->
-            [ WebTiled.Panel.Toolbar.RemoteStorage.view ]
+            [ WebTiled.Panel.Toolbar.RemoteStorage.view model.remoteStorage.status ]
                 |> wrapper x y w h
 
         ( Statusbar, _ ) ->
@@ -148,11 +168,12 @@ render model w h x y kind =
                 |> wrapper x y w h
 
         ( FileManager, _ ) ->
-            div [] [ text "Loading.." ] |> WebTiled.Panel.Generic.panel x y w h "File Manager"
+            WebTiled.Panel.FileManager.view model.remoteStorage.files
+                |> WebTiled.Panel.Generic.panel x y w h "File Manager"
 
         ( Tilesets, _ ) ->
             case model.level of
-                LevelComplete (UrlLevel url) level external ->
+                LevelComplete (UrlLevel url _) level external ->
                     [ Html.Lazy.lazy3 WebTiled.Panel.Tilesets.imagesFromUrl url (TiledUtil.getLevelData level).tilesets external
                     , Html.Lazy.lazy3 WebTiled.Panel.Tilesets.view model.selectedTileset (TiledUtil.getLevelData level).tilesets external
                         |> WebTiled.Panel.Generic.panel x y w h "Tilesets"
@@ -160,16 +181,20 @@ render model w h x y kind =
                         |> div []
 
                 LevelComplete (DiskLevel images) level external ->
-                    [ Html.Lazy.lazy2 WebTiled.Panel.Tilesets.imagesFromDisk images (TiledUtil.getLevelData level).tilesets
+                    [ Html.Lazy.lazy2 WebTiled.Panel.Tilesets.imagesDataUrl images (TiledUtil.getLevelData level).tilesets
                     , Html.Lazy.lazy3 WebTiled.Panel.Tilesets.view model.selectedTileset (TiledUtil.getLevelData level).tilesets external
                         |> WebTiled.Panel.Generic.panel x y w h "Tilesets"
                     ]
                         |> div []
 
-                LevelComplete (RemoteStorageLevel _) _ _ ->
-                    div [] [] |> WebTiled.Panel.Generic.panel x y w h "Tilesets"
+                LevelComplete (RemoteStorageLevel images) level external ->
+                    [ Html.Lazy.lazy2 WebTiled.Panel.Tilesets.imagesDataUrl images (TiledUtil.getLevelData level).tilesets
+                    , Html.Lazy.lazy3 WebTiled.Panel.Tilesets.view model.selectedTileset (TiledUtil.getLevelData level).tilesets external
+                        |> WebTiled.Panel.Generic.panel x y w h "Tilesets"
+                    ]
+                        |> div []
 
-                LevelLoading _ _ _ _ ->
+                LevelLoading _ _ _ _ _ ->
                     div [] [ text "Loading... " ] |> WebTiled.Panel.Generic.panel x y w h "Tilesets"
 
                 LevelPartial _ _ _ _ ->

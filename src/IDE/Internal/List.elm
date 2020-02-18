@@ -1,4 +1,4 @@
-module IDE.Internal.List exposing (getAt, indexedFoldl)
+module IDE.Internal.List exposing (find, getAt, indexedFoldl)
 
 {-| Variant of `foldl` that passes the index of the current element to the step function. `indexedFoldl` is to `List.foldl` as `List.indexedMap` is to `List.map`.
 -}
@@ -21,3 +21,17 @@ getAt idx xs =
 
     else
         List.head <| List.drop idx xs
+
+
+find : (a -> Bool) -> List a -> Maybe a
+find predicate list =
+    case list of
+        [] ->
+            Nothing
+
+        first :: rest ->
+            if predicate first then
+                Just first
+
+            else
+                find predicate rest

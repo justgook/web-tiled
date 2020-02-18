@@ -1,4 +1,4 @@
-module WebTiled.Panel.Tilesets exposing (imagesFromDisk, imagesFromUrl, view)
+module WebTiled.Panel.Tilesets exposing (imagesDataUrl, imagesFromUrl, view)
 
 import Dict exposing (Dict)
 import Html exposing (..)
@@ -57,7 +57,7 @@ imagesFromUrl url tilesets external =
                 Tileset.Source { firstgid } ->
                     case Dict.get firstgid external of
                         Just (Tileset.Embedded info) ->
-                            Lazy.lazy4 image (toFloat info.imagewidth) (toFloat info.imageheight) (imageId i) (url ++ info.image) :: acc
+                            Lazy.lazy4 image (toFloat info.imagewidth) (toFloat info.imageheight) (imageId info.image) (url ++ info.image) :: acc
 
                         Just (Tileset.ImageCollection info) ->
                             acc
@@ -66,7 +66,7 @@ imagesFromUrl url tilesets external =
                             acc
 
                 Tileset.Embedded info ->
-                    Lazy.lazy4 image (toFloat info.imagewidth) (toFloat info.imageheight) (imageId i) (url ++ info.image) :: acc
+                    Lazy.lazy4 image (toFloat info.imagewidth) (toFloat info.imageheight) (imageId info.image) (url ++ info.image) :: acc
 
                 Tileset.ImageCollection { name } ->
                     acc
@@ -76,19 +76,19 @@ imagesFromUrl url tilesets external =
         |> div []
 
 
-imagesFromDisk : Dict String String -> List Tileset.Tileset -> Html msg
-imagesFromDisk images tilesets =
+imagesDataUrl : Dict String String -> List Tileset.Tileset -> Html msg
+imagesDataUrl images tilesets =
     List.indexedFoldl
         (\i tileset acc ->
             case tileset of
-                Tileset.Source sourceTileData ->
+                Tileset.Source _ ->
                     acc
 
                 Tileset.Embedded info ->
                     Lazy.lazy4 image
                         (toFloat info.imagewidth)
                         (toFloat info.imageheight)
-                        (imageId i)
+                        (imageId info.image)
                         (Dict.get info.image images |> Maybe.withDefault "")
                         :: acc
 
@@ -128,13 +128,17 @@ content active external i tileset acc =
                         ]
 
                     else
-                        [ DragScale.apply m ]
+                        [ DragScale.apply m
+                        , style "visibility" "visible"
+                        , style "position" "absolute"
+                        , style "top" "0"
+                        ]
 
                 internalSpacing =
                     1
             in
             div lattr
-                [ Lazy.lazy7 tiles internalSpacing (imageId i) info.firstgid info.tilecount info.columns info.tilewidth info.tileheight
+                [ Lazy.lazy7 tiles internalSpacing (imageId info.image) info.firstgid info.tilecount info.columns info.tilewidth info.tileheight
                 ]
                 :: acc
 
@@ -142,9 +146,9 @@ content active external i tileset acc =
             acc
 
 
-imageId : Int -> String
-imageId i =
-    "tileset-image[" ++ String.fromInt i ++ "]"
+imageId : String -> String
+imageId name =
+    "tileset-image[" ++ name ++ "]"
 
 
 tiles : Float -> String -> Int -> Int -> Int -> Int -> Int -> Html msg
@@ -210,13 +214,3 @@ tilesetButton active i name =
         , class "btn btn-mini btn-default"
         ]
         [ text name ]
-
-
-toMaybe : Tileset.Tileset -> Maybe Tileset.Tileset
-toMaybe tileset =
-    case tileset of
-        Tileset.Source _ ->
-            Nothing
-
-        _ ->
-            Just tileset

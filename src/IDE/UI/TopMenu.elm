@@ -83,7 +83,7 @@ css _ =
     font-size: 14px;
     display: flex;
     padding-left:10px;
-    flex-flow: row no-wrap;
+    flex-flow: row nowrap;
 
 }
 .menu > .menu-item > .menu-label > .icon {

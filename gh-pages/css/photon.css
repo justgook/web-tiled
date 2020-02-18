@@ -313,7 +313,7 @@ h6 {
     clear: both;
 }
 
-.disabled {
+.disabled, :disabled {
     color: #c0c0c0;
 }
 

@@ -5,6 +5,7 @@ module WebTiled.Util.Tiled exposing
     , images
     , sourceTileset
     , updateLevelData
+    , validate
     )
 
 import Dict
@@ -12,6 +13,22 @@ import Set exposing (Set)
 import Tiled.Layer as Layer
 import Tiled.Level as Level exposing (Level, LevelData)
 import Tiled.Tileset as Tileset exposing (Tileset)
+
+
+validate : Level -> Dict.Dict String v -> Dict.Dict String a -> Result (Set String) Level
+validate level tilesets images_ =
+    let
+        missing =
+            Dict.keys images_
+                |> Set.fromList
+                |> Set.diff (dependencies level)
+                |> flip Set.diff (Set.fromList (Dict.keys tilesets))
+    in
+    if Set.isEmpty missing then
+        Ok level
+
+    else
+        Err missing
 
 
 sourceTileset : Level -> List Tileset.SourceTileData
@@ -231,3 +248,8 @@ getLevelData level =
             , width = info.width
             , properties = info.properties
             }
+
+
+flip : (c -> b -> a) -> b -> c -> a
+flip fn a b =
+    fn b a

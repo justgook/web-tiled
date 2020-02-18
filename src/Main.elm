@@ -13,14 +13,19 @@ import IDE.Internal.List as List
 import IDE.UI.Html
 import IDE.UI.Layout as UI exposing (Layout)
 import Json.Decode as D
+import Json.Encode as E
 import Port.BuildRun
 import RemoteStorage as RS
+import Set
 import Task
+import Tiled
+import Tiled.Tileset
 import WebTiled.Message exposing (Message(..))
 import WebTiled.Model as Model exposing (CurrentLevel(..), LevelFrom(..), Model, PropertiesFor(..))
 import WebTiled.Panel as Panel2 exposing (preferences)
 import WebTiled.Util.File as File
 import WebTiled.Util.Http as Http
+import WebTiled.Util.Tiled as TiledUtil
 
 
 main : Program D.Value Model Message
@@ -36,8 +41,7 @@ main =
 subscriptions : Model -> Sub Message
 subscriptions model =
     [ Browser.Events.onResize Resize
-
-    --, RemoteStorage.subscriptions |> Sub.map (Result.map FromStore >> Result.withDefault FromStoreUnknown)
+    , RS.subscriptions
     ]
         |> Sub.batch
 
@@ -69,6 +73,7 @@ update msg model =
         CloseModal ->
             ( { model | modal = Nothing }, Cmd.none )
 
+        --- File
         Open ->
             ( model, File.Select.files [] (\a -> (::) a >> GetFiles) )
 
@@ -78,13 +83,16 @@ update msg model =
         GetFiles files ->
             ( model, File.getLevel files )
 
-        FileFromUrl relUrl level tilesets ->
-            ( { model | level = LevelComplete (UrlLevel relUrl) level (Dict.fromList tilesets) }, Cmd.none )
+        GetFileRemoteStorage file ->
+            ( model, RS.getFile file )
+
+        FileFromUrl ( relUrl, filename ) level tilesets ->
+            ( { model | level = LevelComplete (UrlLevel relUrl filename) level (Dict.fromList tilesets) }, Cmd.none )
 
         FilesFromDisk levels tilesets images ->
             case levels |> Dict.values |> List.head of
                 Just level ->
-                    case File.validate level tilesets images of
+                    case TiledUtil.validate level tilesets images of
                         Ok _ ->
                             ( { model | level = LevelComplete (DiskLevel images) level Dict.empty }, Cmd.none )
 
@@ -102,6 +110,38 @@ update msg model =
                     --in
                     ( model, Cmd.none )
 
+        SaveFromUrl result ->
+            case ( result, model.level ) of
+                ( Ok images, LevelComplete (UrlLevel _ filename) level tilesets ) ->
+                    level
+                        |> TiledUtil.sourceTileset
+                        |> List.foldl
+                            (\{ source, firstgid } acc ->
+                                Dict.get firstgid tilesets
+                                    |> Maybe.map (\a -> ( source, E.encode 0 (Tiled.Tileset.encode a) ) :: acc)
+                                    |> Maybe.withDefault acc
+                            )
+                            []
+                        |> RS.saveLevel ( filename, level ) images
+                        |> Tuple.pair model
+
+                _ ->
+                    ( model, Cmd.none )
+
+        Save ->
+            case model.level of
+                LevelComplete (UrlLevel url _) level _ ->
+                    ( model
+                    , level
+                        |> TiledUtil.images
+                        |> Set.foldl (\name -> Http.getBytes (url ++ name) |> Task.map (Tuple.pair name) |> (::)) []
+                        |> Task.sequence
+                        |> Task.attempt SaveFromUrl
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
+
         FileError err ->
             --let
             --    _ =
@@ -109,6 +149,186 @@ update msg model =
             --in
             ( model, Cmd.none )
 
+        FileMissing name ->
+            --let
+            --    _ =
+            --        Debug.log "CANNOT LOAD!::file" name
+            --in
+            ( model, Cmd.none )
+
+        --Remote Storage
+        RemoteStorageFile name contentType data ->
+            case contentType of
+                "application/tiled.level-json" ->
+                    case D.decodeString Tiled.decode data of
+                        Ok level ->
+                            case TiledUtil.validate level Dict.empty Dict.empty of
+                                Ok _ ->
+                                    ( { model
+                                        | level =
+                                            LevelComplete
+                                                (RemoteStorageLevel Dict.empty)
+                                                level
+                                                Dict.empty
+                                      }
+                                    , Cmd.none
+                                    )
+
+                                Err missingFiles ->
+                                    ( { model
+                                        | level =
+                                            LevelLoading
+                                                (RemoteStorageLevel Dict.empty)
+                                                level
+                                                Dict.empty
+                                                Dict.empty
+                                                missingFiles
+                                      }
+                                    , Set.foldl (RS.getFile >> (::)) [] missingFiles |> Cmd.batch
+                                    )
+
+                        _ ->
+                            ( model, Cmd.none )
+
+                "image/base64" ->
+                    case model.level of
+                        LevelLoading levelForm level tilesets images _ ->
+                            let
+                                newImages =
+                                    Dict.insert name data images
+                            in
+                            case TiledUtil.validate level tilesets newImages of
+                                Ok _ ->
+                                    ( { model
+                                        | level =
+                                            LevelComplete
+                                                (RemoteStorageLevel newImages)
+                                                level
+                                                Dict.empty
+                                      }
+                                    , Cmd.none
+                                    )
+
+                                Err inProgress ->
+                                    ( { model
+                                        | level = LevelLoading levelForm level tilesets newImages (Set.remove name inProgress)
+                                      }
+                                    , Cmd.none
+                                    )
+
+                        _ ->
+                            ( model, Cmd.none )
+
+                "application/tiled.tileset-json" ->
+                    case model.level of
+                        LevelLoading levelForm level tilesets images _ ->
+                            let
+                                newTilesets =
+                                    level
+                                        |> TiledUtil.sourceTileset
+                                        |> List.find (.source >> (==) name)
+                                        |> Maybe.andThen
+                                            (\{ firstgid, source } ->
+                                                D.decodeString (Tiled.Tileset.decodeFile firstgid) data
+                                                    |> Result.toMaybe
+                                                    |> Maybe.map (\t -> Dict.insert source t tilesets)
+                                            )
+                                        |> Maybe.withDefault tilesets
+                            in
+                            case TiledUtil.validate level newTilesets images of
+                                Ok _ ->
+                                    ( { model
+                                        | level =
+                                            LevelComplete
+                                                (RemoteStorageLevel images)
+                                                level
+                                                (Dict.foldl (\_ v -> Dict.insert (TiledUtil.firstGid v) v) Dict.empty newTilesets)
+                                      }
+                                    , Cmd.none
+                                    )
+
+                                Err inProgress ->
+                                    ( { model
+                                        | level = LevelLoading levelForm level newTilesets images (Set.remove name inProgress)
+                                      }
+                                    , Cmd.none
+                                    )
+
+                        --
+                        _ ->
+                            ( model, Cmd.none )
+
+                _ ->
+                    --let
+                    --    _ =
+                    --        Debug.log "RemoteStorageFile" ( name, contentType )
+                    --in
+                    ( model, Cmd.none )
+
+        RemoteStorageUserNameChange userName ->
+            let
+                remoteStorage =
+                    model.remoteStorage
+            in
+            ( { model | remoteStorage = { remoteStorage | userName = userName } }, Cmd.none )
+
+        RemoteStorageConnect ->
+            let
+                remoteStorage =
+                    model.remoteStorage
+            in
+            ( { model | remoteStorage = { remoteStorage | status = Model.Connecting } }, RS.connect remoteStorage.userName )
+
+        RemoteStorageDisconnect ->
+            let
+                remoteStorage =
+                    model.remoteStorage
+            in
+            ( { model | remoteStorage = { remoteStorage | status = Model.Connecting } }, RS.disconnect )
+
+        RemoteStorageOffline ->
+            let
+                remoteStorage =
+                    model.remoteStorage
+            in
+            ( { model | remoteStorage = { remoteStorage | status = Model.Offline } }, Cmd.none )
+
+        RemoteStorageOnline userAddress ->
+            let
+                remoteStorage =
+                    model.remoteStorage
+            in
+            ( { model | remoteStorage = { remoteStorage | status = Model.Online, userName = userAddress } }, Cmd.none )
+
+        RemoteStorageSyncing ->
+            let
+                remoteStorage =
+                    model.remoteStorage
+            in
+            ( { model | remoteStorage = { remoteStorage | status = Model.Syncing } }, Cmd.none )
+
+        RemoteStorageSyncDone ->
+            let
+                remoteStorage =
+                    model.remoteStorage
+            in
+            ( { model | remoteStorage = { remoteStorage | status = Model.Online } }, Cmd.none )
+
+        RemoteStorageFileList files ->
+            let
+                remoteStorage =
+                    model.remoteStorage
+            in
+            ( { model | remoteStorage = { remoteStorage | files = files } }, Cmd.none )
+
+        RemoteStorageUnhandledEvent key ->
+            --let
+            --    _ =
+            --        Debug.log "RemoteStorageUnhandledEvent" key
+            --in
+            ( model, Cmd.none )
+
+        ---Scripts
         Run ->
             case model.level of
                 LevelComplete _ level _ ->

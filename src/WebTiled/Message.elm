@@ -15,6 +15,7 @@ type Message
     | Open
     | OpenUrl
     | Save
+    | SaveFromUrl (Result String (List ( String, String )))
     | SaveAs
     | Export
     | ExportAs
@@ -64,12 +65,22 @@ type Message
       --- Files
     | GetFiles (List File)
     | GetFileFromUrl String
-    | FileFromUrl String Tiled.Level.Level (List ( Int, Tiled.Tileset.Tileset ))
+    | GetFileRemoteStorage String
+    | FileFromUrl ( String, String ) Tiled.Level.Level (List ( Int, Tiled.Tileset.Tileset ))
     | FilesFromDisk (Files Tiled.Level.Level) (Files Tiled.Tileset.Tileset) (Files String)
+    | FileMissing String
     | FileError String
       -- RemoteStorage
     | RemoteStorageFile String String String
     | RemoteStorageFileList (List String)
+    | RemoteStorageOffline
+    | RemoteStorageSyncing
+    | RemoteStorageSyncDone
+    | RemoteStorageOnline String
+    | RemoteStorageUserNameChange String
+    | RemoteStorageConnect
+    | RemoteStorageDisconnect
+    | RemoteStorageUnhandledEvent String
       -- Global Subscription
     | Resize Int Int
 
