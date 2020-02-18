@@ -20,7 +20,7 @@
          "width":12,
          "x":0,
          "y":0
-        }, 
+        },
         {
          "data":[0, 315, 315, 315, 315, 315, 315, 315, 315, 0, 316, 316, 0, 323, 323, 323, 323, 323, 323, 323, 323, 0, 324, 324, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
          "height":12,
@@ -32,7 +32,7 @@
          "width":12,
          "x":0,
          "y":0
-        }, 
+        },
         {
          "data":[195, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 195, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 195, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 195, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 195, 0, 0, 0, 0, 0, 23, 24, 0, 0, 0, 0, 195, 0, 0, 0, 0, 0, 31, 32, 0, 0, 0, 0, 195, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 195, 315, 315, 315, 315, 315, 315, 315, 315, 0, 316, 316, 195, 323, 323, 323, 323, 323, 323, 323, 323, 0, 324, 324, 195, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 203, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 306, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
          "height":12,
@@ -44,7 +44,7 @@
          "width":12,
          "x":0,
          "y":0
-        }, 
+        },
         {
          "data":[0, 0, 0, 0, 0, 0, 0, 0, 0, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 72, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 147, 148, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
          "height":12,
@@ -56,58 +56,58 @@
          "width":12,
          "x":0,
          "y":0
-        }, 
+        },
         {
          "draworder":"topdown",
          "id":5,
          "name":"Logic",
          "objects":[
                 {
-                 "gid":529,
+                 "gid":513,
                  "height":32,
-                 "id":5,
-                 "name":"Hello",
+                 "id":8,
+                 "name":"Hero",
                  "properties":[
                         {
                          "name":"anim.walk.east.id",
                          "type":"int",
-                         "value":8
-                        }, 
+                         "value":6
+                        },
                         {
                          "name":"anim.walk.north.id",
                          "type":"int",
-                         "value":12
-                        }, 
+                         "value":9
+                        },
                         {
                          "name":"anim.walk.south.id",
                          "type":"int",
                          "value":0
-                        }, 
+                        },
                         {
                          "name":"anim.walk.west.id",
                          "type":"int",
-                         "value":4
-                        }, 
+                         "value":3
+                        },
                         {
                          "name":"goto",
                          "type":"object",
-                         "value":6
-                        }, 
+                         "value":9
+                        },
                         {
                          "name":"onKey[a]",
                          "type":"string",
                          "value":"Move.west"
-                        }, 
+                        },
                         {
                          "name":"onKey[d]",
                          "type":"string",
                          "value":"Move.east"
-                        }, 
+                        },
                         {
                          "name":"onKey[s]",
                          "type":"string",
                          "value":"Move.south"
-                        }, 
+                        },
                         {
                          "name":"onKey[w]",
                          "type":"string",
@@ -117,27 +117,27 @@
                  "type":"",
                  "visible":true,
                  "width":32,
-                 "x":64,
+                 "x":96,
                  "y":320
-                }, 
+                },
                 {
                  "height":0,
-                 "id":6,
+                 "id":9,
                  "name":"Target",
                  "point":true,
                  "rotation":0,
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":128,
-                 "y":128
+                 "x":320,
+                 "y":64
                 }],
          "opacity":1,
          "type":"objectgroup",
          "visible":true,
          "x":0,
          "y":0
-        }, 
+        },
         {
          "data":[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 167, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 123, 124, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 131, 132, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 139, 140, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
          "height":12,
@@ -151,19 +151,19 @@
          "y":0
         }],
  "nextlayerid":8,
- "nextobjectid":7,
+ "nextobjectid":10,
  "orientation":"orthogonal",
  "properties":[
         {
          "name":"offset.x",
          "type":"float",
          "value":0
-        }, 
+        },
         {
          "name":"pixelsPerUnit",
          "type":"float",
          "value":384
-        }, 
+        },
         {
          "name":"player",
          "type":"object",
@@ -215,7 +215,7 @@
                      "x":0,
                      "y":0
                     }
-                }, 
+                },
                 {
                  "id":194,
                  "objectgroup":
@@ -240,7 +240,7 @@
                      "x":0,
                      "y":0
                     }
-                }, 
+                },
                 {
                  "id":202,
                  "objectgroup":
@@ -265,7 +265,7 @@
                      "x":0,
                      "y":0
                     }
-                }, 
+                },
                 {
                  "id":305,
                  "objectgroup":
@@ -290,7 +290,7 @@
                      "x":0,
                      "y":0
                     }
-                }, 
+                },
                 {
                  "id":313,
                  "objectgroup":
@@ -315,7 +315,7 @@
                      "x":0,
                      "y":0
                     }
-                }, 
+                },
                 {
                  "id":321,
                  "objectgroup":
@@ -340,7 +340,7 @@
                      "x":0,
                      "y":0
                     }
-                }, 
+                },
                 {
                  "id":322,
                  "objectgroup":
@@ -365,7 +365,7 @@
                      "x":0,
                      "y":0
                     }
-                }, 
+                },
                 {
                  "id":323,
                  "objectgroup":
@@ -392,18 +392,17 @@
                     }
                 }],
          "tilewidth":32
-        }, 
+        },
         {
-         "columns":4,
+         "columns":3,
          "firstgid":513,
          "image":"hero.png",
-         "imageheight":256,
-         "imagewidth":128,
+         "imageheight":128,
+         "imagewidth":96,
          "margin":0,
          "name":"hero",
-         "objectalignment":"topleft",
          "spacing":0,
-         "tilecount":32,
+         "tilecount":12,
          "tileheight":32,
          "tiles":[
                 {
@@ -411,123 +410,64 @@
                         {
                          "duration":100,
                          "tileid":0
-                        }, 
+                        },
                         {
                          "duration":100,
                          "tileid":1
-                        }, 
+                        },
                         {
                          "duration":100,
                          "tileid":2
                         }],
                  "id":0
-                }, 
+                },
                 {
                  "animation":[
+                        {
+                         "duration":100,
+                         "tileid":3
+                        },
                         {
                          "duration":100,
                          "tileid":4
-                        }, 
+                        },
                         {
                          "duration":100,
                          "tileid":5
-                        }, 
+                        }],
+                 "id":3
+                },
+                {
+                 "animation":[
                         {
                          "duration":100,
                          "tileid":6
-                        }],
-                 "id":4
-                }, 
-                {
-                 "animation":[
+                        },
+                        {
+                         "duration":100,
+                         "tileid":7
+                        },
                         {
                          "duration":100,
                          "tileid":8
-                        }, 
+                        }],
+                 "id":6
+                },
+                {
+                 "animation":[
                         {
                          "duration":100,
                          "tileid":9
-                        }, 
+                        },
                         {
                          "duration":100,
                          "tileid":10
-                        }],
-                 "id":8
-                }, 
-                {
-                 "animation":[
+                        },
                         {
                          "duration":100,
-                         "tileid":12
-                        }, 
-                        {
-                         "duration":100,
-                         "tileid":13
-                        }, 
-                        {
-                         "duration":100,
-                         "tileid":14
+                         "tileid":11
                         }],
-                 "id":12
-                }, 
-                {
-                 "animation":[
-                        {
-                         "duration":200,
-                         "tileid":16
-                        }, 
-                        {
-                         "duration":200,
-                         "tileid":17
-                        }],
-                 "id":16,
-                 "objectgroup":
-                    {
-                     "draworder":"index",
-                     "name":"",
-                     "objects":[
-                            {
-                             "height":32,
-                             "id":1,
-                             "name":"",
-                             "rotation":0,
-                             "type":"player",
-                             "visible":true,
-                             "width":24,
-                             "x":4,
-                             "y":0
-                            }],
-                     "opacity":1,
-                     "type":"objectgroup",
-                     "visible":true,
-                     "x":0,
-                     "y":0
-                    }
-                }, 
-                {
-                 "id":17,
-                 "objectgroup":
-                    {
-                     "draworder":"index",
-                     "name":"",
-                     "objects":[
-                            {
-                             "height":31,
-                             "id":1,
-                             "name":"",
-                             "rotation":0,
-                             "type":"player",
-                             "visible":true,
-                             "width":24,
-                             "x":4,
-                             "y":1
-                            }],
-                     "opacity":1,
-                     "type":"objectgroup",
-                     "visible":true,
-                     "x":0,
-                     "y":0
-                    }
+                 "id":9
                 }],
          "tilewidth":32
         }],
