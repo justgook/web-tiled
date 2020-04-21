@@ -30,7 +30,7 @@ view info =
             toFloat <| info.height * info.tileheight
 
         m =
-            { drag = { x = 0, y = 0 }, scale = 1 }
+            { drag = { x = 20, y = 20 }, scale = 1 }
     in
     div
         [ style "background-color" info.backgroundcolor

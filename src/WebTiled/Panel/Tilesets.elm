@@ -16,7 +16,7 @@ import WebTiled.Panel.Generic as Generic
 import WebTiled.Svg.Tileset
 
 
-view : Int -> List Tileset.Tileset -> Dict Int Tileset.Tileset -> Html Message
+view : Int -> List Tileset.Tileset -> Dict String Tileset.Tileset -> Html Message
 view selected tilesets external =
     [ Lazy.lazy3 viewTabs selected tilesets external
     , Lazy.lazy3 viewContent selected tilesets external
@@ -24,7 +24,7 @@ view selected tilesets external =
         |> div []
 
 
-viewContent : Int -> List Tileset.Tileset -> Dict Int Tileset.Tileset -> Html msg
+viewContent : Int -> List Tileset.Tileset -> Dict String Tileset.Tileset -> Html msg
 viewContent selected tilesets external =
     div
         [ style "overflow" "hidden"
@@ -38,7 +38,7 @@ viewContent selected tilesets external =
         List.indexedFoldl (content selected external) [] tilesets
 
 
-viewTabs : Int -> List Tileset.Tileset -> Dict Int Tileset.Tileset -> Html Message
+viewTabs : Int -> List Tileset.Tileset -> Dict String Tileset.Tileset -> Html Message
 viewTabs active tilesets external =
     header [ class "toolbar toolbar-header text-center" ]
         [ div [ class "toolbar-actions" ]
@@ -49,13 +49,13 @@ viewTabs active tilesets external =
         ]
 
 
-imagesFromUrl : String -> List Tileset.Tileset -> Dict Int Tileset.Tileset -> Html msg
+imagesFromUrl : String -> List Tileset.Tileset -> Dict String Tileset.Tileset -> Html msg
 imagesFromUrl url tilesets external =
     List.indexedFoldl
         (\i tileset acc ->
             case tileset of
-                Tileset.Source { firstgid } ->
-                    case Dict.get firstgid external of
+                Tileset.Source { firstgid, source } ->
+                    case Dict.get source external of
                         Just (Tileset.Embedded info) ->
                             Lazy.lazy4 image (toFloat info.imagewidth) (toFloat info.imageheight) (imageId info.image) (url ++ info.image) :: acc
 
@@ -76,7 +76,7 @@ imagesFromUrl url tilesets external =
         |> div []
 
 
-imagesDataUrl : Dict String String -> List Tileset.Tileset -> Html msg
+imagesDataUrl : Dict String ( String, a ) -> List Tileset.Tileset -> Html msg
 imagesDataUrl images tilesets =
     List.indexedFoldl
         (\i tileset acc ->
@@ -89,7 +89,7 @@ imagesDataUrl images tilesets =
                         (toFloat info.imagewidth)
                         (toFloat info.imageheight)
                         (imageId info.image)
-                        (Dict.get info.image images |> Maybe.withDefault "")
+                        (Dict.get info.image images |> Maybe.map Tuple.first |> Maybe.withDefault "")
                         :: acc
 
                 Tileset.ImageCollection { name } ->
@@ -100,11 +100,11 @@ imagesDataUrl images tilesets =
         |> div []
 
 
-content : Int -> Dict Int Tileset.Tileset -> Int -> Tileset.Tileset -> List (Html msg) -> List (Html msg)
+content : Int -> Dict String Tileset.Tileset -> Int -> Tileset.Tileset -> List (Html msg) -> List (Html msg)
 content active external i tileset acc =
     case tileset of
-        Tileset.Source { firstgid } ->
-            case Dict.get firstgid external of
+        Tileset.Source { firstgid, source } ->
+            case Dict.get source external of
                 Just ((Tileset.Embedded _) as tileset_) ->
                     content active external i tileset_ acc
 
@@ -187,10 +187,11 @@ image w h imageId_ url =
         ]
 
 
+tabs : Int -> Dict String Tileset.Tileset -> Int -> Tileset.Tileset -> List (Html Message) -> List (Html Message)
 tabs active external i tileset =
     case tileset of
         Tileset.Source { source, firstgid } ->
-            case Dict.get firstgid external of
+            case Dict.get source external of
                 Just ((Tileset.Embedded _) as tileset_) ->
                     tabs active external i tileset_
 

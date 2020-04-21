@@ -5,8 +5,10 @@ module WebTiled.Message exposing
 
 import Dict exposing (Dict)
 import File exposing (File)
+import Playground
 import Tiled.Level
 import Tiled.Tileset
+import WebGL.Texture as WebGL
 
 
 type Message
@@ -15,7 +17,6 @@ type Message
     | Open
     | OpenUrl
     | Save
-    | SaveFromUrl (Result String (List ( String, String )))
     | SaveAs
     | Export
     | ExportAs
@@ -62,17 +63,19 @@ type Message
       --- Tilesets
     | NewTileset
     | SelectTileset Int
-      --- Files
-    | GetFiles (List File)
-    | GetFileFromUrl String
-    | GetFileRemoteStorage String
-    | FileFromUrl ( String, String ) Tiled.Level.Level (List ( Int, Tiled.Tileset.Tileset ))
-    | FilesFromDisk (Files Tiled.Level.Level) (Files Tiled.Tileset.Tileset) (Files String)
-    | FileMissing String
+      --- Files Request
+    | ParseFiles (List File)
+    | LoadFileFromUrl String
+    | LoadFileRemoteStorage String
+      --- Files Response
+    | FileFromUrl ( String, String ) Tiled.Level.Level (Dict String Tiled.Tileset.Tileset)
+    | FilesFromDisk Tiled.Level.Level (Files Tiled.Tileset.Tileset) (Files String)
+    | GotImage String String WebGL.Texture
     | FileError String
       -- RemoteStorage
     | RemoteStorageFile String String String
     | RemoteStorageFileList (List String)
+    | RemoteStorageFileMissing String
     | RemoteStorageOffline
     | RemoteStorageSyncing
     | RemoteStorageSyncDone

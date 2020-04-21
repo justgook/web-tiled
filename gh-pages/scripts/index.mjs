@@ -28,7 +28,8 @@ document.body.addEventListener("dragover", event => {
 
 const flags = {
     version: "#VERSION#",
-    levelUrl: getParameterByName("url") || "top-down-adventure/demo.json"
+    levelUrl: getParameterByName("url")
+        || "https://raw.githubusercontent.com/z0lv/-age-top-down-adventure/tiled/demo.json"
 };
 
 

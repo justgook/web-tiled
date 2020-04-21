@@ -3,16 +3,40 @@ module WebTiled.Util.Tiled exposing
     , firstGid
     , getLevelData
     , images
+    , mergeTileset
     , sourceTileset
     , updateLevelData
     , validate
     )
 
-import Dict
+import Dict exposing (Dict)
 import Set exposing (Set)
 import Tiled.Layer as Layer
 import Tiled.Level as Level exposing (Level, LevelData)
 import Tiled.Tileset as Tileset exposing (Tileset)
+
+
+mergeTileset : Dict String Tileset -> Level -> Level
+mergeTileset ts =
+    updateLevelData
+        (\l ->
+            { l
+                | tilesets =
+                    List.foldl
+                        (\t acc ->
+                            case t of
+                                Tileset.Source info ->
+                                    Dict.get info.source ts
+                                        |> Maybe.map (\a -> a :: acc)
+                                        |> Maybe.withDefault (t :: acc)
+
+                                _ ->
+                                    t :: acc
+                        )
+                        []
+                        l.tilesets
+            }
+        )
 
 
 validate : Level -> Dict.Dict String v -> Dict.Dict String a -> Result (Set String) Level

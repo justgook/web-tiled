@@ -46,19 +46,20 @@ disconnect =
         )
 
 
-saveLevel : ( String, Tiled.Level ) -> List ( String, String ) -> List ( String, String ) -> Cmd msg
-saveLevel ( levelPath, level ) images =
-    List.foldl
-        (\( path, content ) ->
-            (::) (storeFile "application/tiled.tileset-json" path content)
-        )
-        (List.foldl (\( path, content ) -> (::) (storeFile "image/base64" path content))
-            [ Tiled.encode level
-                |> E.encode 0
-                |> storeFile "application/tiled.level-json" levelPath
-            ]
-            images
-        )
+saveLevel : String -> Tiled.Level -> List ( String, String ) -> List ( String, String ) -> Cmd msg
+saveLevel levelPath level images tilesets =
+    tilesets
+        |> List.foldl
+            (\( path, content ) ->
+                (::) (storeFile "application/tiled.tileset-json" path content)
+            )
+            (List.foldl (\( path, content ) -> (::) (storeFile "image/base64" path content))
+                [ Tiled.encode level
+                    |> E.encode 0
+                    |> storeFile "application/tiled.level-json" levelPath
+                ]
+                images
+            )
         >> Cmd.batch
 
 
@@ -134,7 +135,7 @@ decoder2 =
             (\( id, name ) ->
                 case id of
                     "getFile" ->
-                        D.oneOf [ D.field "data" (decodeGotFile name), D.succeed (FileMissing name) ]
+                        D.oneOf [ D.field "data" (decodeGotFile name), D.succeed (RemoteStorageFileMissing name) ]
 
                     _ ->
                         D.fail "Unknown Key"

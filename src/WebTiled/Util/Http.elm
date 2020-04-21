@@ -37,7 +37,7 @@ getLevel url =
                     List.foldl
                         (\{ firstgid, source } ->
                             getJson (relUrl ++ source) (Tiled.Tileset.decodeFile firstgid)
-                                |> Task.map (Tuple.pair firstgid)
+                                |> Task.map (Tuple.pair source)
                                 |> (::)
                         )
                         []
@@ -49,7 +49,7 @@ getLevel url =
             (\result ->
                 case result of
                     Ok ( level, tilesets ) ->
-                        FileFromUrl ( relUrl, String.replace relUrl "" url ) level tilesets
+                        FileFromUrl ( relUrl, String.replace relUrl "" url ) level (Dict.fromList tilesets)
 
                     Err err ->
                         FileError err

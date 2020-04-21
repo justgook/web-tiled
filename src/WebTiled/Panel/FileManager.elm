@@ -25,7 +25,7 @@ view files =
             |> List.map
                 (\name ->
                     tr [ class "no-delay" ]
-                        [ td [ onClick (GetFileRemoteStorage name) ]
+                        [ td [ onClick (LoadFileRemoteStorage name) ]
                             (if String.endsWith "/" name then
                                 [ span [ class "icon icon-folder" ] [], text ((++) " " <| String.replace "/" "" name) ]
 

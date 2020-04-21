@@ -89,9 +89,7 @@ jobs:
       run: node build-assets.js
 
     - name: Deploy to GitHub Pages
-      uses: JamesIves/github-pages-deploy-action@3.2.1
+      uses: peaceiris/actions-gh-pages@v3.5.3
       with:
-        ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-        BASE_BRANCH: master
-        BRANCH: gh-pages
-        FOLDER: gh-pages
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./gh-pages

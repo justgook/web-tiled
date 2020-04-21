@@ -10,55 +10,65 @@ import Task
 import Tiled
 import Tiled.Level exposing (Level)
 import Tiled.Tileset
+import WebGL.Texture as Texture
 import WebTiled.Message exposing (Message(..))
+import WebTiled.Render exposing (textureOption)
 import WebTiled.Util.Tiled as TiledUtil
 
 
+type FileMime
+    = Json String
+    | Bytes String
+
+
 getLevel : List File -> Cmd Message
-getLevel files =
+getLevel =
     List.map
         (\file ->
             case File.mime file of
                 "application/json" ->
                     File.toString file
-                        |> Task.map (Tuple.pair (File.name file))
+                        |> Task.map (Json >> Tuple.pair (File.name file))
 
                 _ ->
                     File.toUrl file
-                        |> Task.map (Tuple.pair (File.name file))
+                        |> Task.map (Bytes >> Tuple.pair (File.name file))
         )
-        files
-        |> Task.sequence
-        |> Task.attempt
+        >> Task.sequence
+        >> Task.attempt
             (\r ->
                 case r of
-                    Ok fs ->
-                        List.foldl parseFile ( Dict.empty, Dict.empty, Dict.empty ) fs
-                            |> uncurry3 FilesFromDisk
+                    Ok files ->
+                        case List.foldl parseFile ( Nothing, Dict.empty, Dict.empty ) files of
+                            ( Just level, tilesets, images ) ->
+                                FilesFromDisk level tilesets images
+
+                            ( Nothing, _, _ ) ->
+                                FileError "Missing Level file"
 
                     Err err ->
                         FileError err
             )
 
 
-parseFile ( name, file ) ( levels, tilesets, images ) =
-    if String.endsWith ".json" name then
-        case D.decodeString Tiled.decode file of
-            Ok level ->
-                ( Dict.insert name level levels, tilesets, images )
+parseFile :
+    ( String, FileMime )
+    -> ( Maybe Level, Dict.Dict String Tiled.Tileset.Tileset, Dict.Dict String String )
+    -> ( Maybe Level, Dict.Dict String Tiled.Tileset.Tileset, Dict.Dict String String )
+parseFile ( name, file_ ) ( mLevel, tilesets, images ) =
+    case file_ of
+        Json file ->
+            case D.decodeString Tiled.decode file of
+                Ok level ->
+                    ( Just level, tilesets, images )
 
-            Err _ ->
-                case D.decodeString (Tiled.Tileset.decodeFile -1) file of
-                    Ok tileset ->
-                        ( levels, Dict.insert name tileset tilesets, images )
+                Err _ ->
+                    case D.decodeString (Tiled.Tileset.decodeFile -1) file of
+                        Ok tileset ->
+                            ( mLevel, Dict.insert name tileset tilesets, images )
 
-                    Err _ ->
-                        ( levels, tilesets, images )
+                        Err _ ->
+                            ( mLevel, tilesets, images )
 
-    else
-        ( levels, tilesets, Dict.insert name file images )
-
-
-uncurry3 : (a -> b -> c -> d) -> ( a, b, c ) -> d
-uncurry3 fn ( a, b, c ) =
-    fn a b c
+        Bytes file ->
+            ( mLevel, tilesets, Dict.insert name file images )

@@ -10,21 +10,22 @@ import WebTiled.Panel.Generic as Generic
 
 view : List Int -> List Layer.Layer -> Html Message
 view selected =
-    List.indexedMap
-        (\i layer ->
-            case layer of
-                Layer.Image imageData ->
-                    item "icon-picture" imageData.name selected i
+    List.reverse
+        >> List.indexedMap
+            (\i layer ->
+                case layer of
+                    Layer.Image imageData ->
+                        item "icon-picture" imageData.name selected i
 
-                Layer.Object objectData ->
-                    item "icon-network" objectData.name selected i
+                    Layer.Object objectData ->
+                        item "icon-network" objectData.name selected i
 
-                Layer.Tile tileData ->
-                    item "icon-layout" tileData.name selected i
+                    Layer.Tile tileData ->
+                        item "icon-layout" tileData.name selected i
 
-                Layer.InfiniteTile tileChunkedData ->
-                    item "icon-layout" tileChunkedData.name selected i
-        )
+                    Layer.InfiniteTile tileChunkedData ->
+                        item "icon-layout" tileChunkedData.name selected i
+            )
         >> nav [ class "nav-group sidebar" ]
         >> List.singleton
         >> div []

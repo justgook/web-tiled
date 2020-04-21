@@ -1,5 +1,6 @@
 module WebTiled.Model exposing
     ( CurrentLevel(..)
+    , Images
     , Kind(..)
     , LevelFrom(..)
     , Model
@@ -14,7 +15,9 @@ import Json.Decode as D
 import Set exposing (Set)
 import Tiled.Level
 import Tiled.Tileset
+import WebGL.Texture as WebGL
 import WebTiled.Message exposing (PreferencesTab(..))
+import WebTiled.Render
 
 
 type alias Model =
@@ -26,6 +29,7 @@ type alias Model =
     , size : { w : Int, h : Int }
     , modal : Maybe (UI.Layout Kind)
     , layout : UI.Layout Kind
+    , render : WebTiled.Render.Model
 
     --- Running
     , build :
@@ -56,6 +60,7 @@ init flags =
     , size = { w = 800, h = 600 }
     , modal = Nothing --Just (UI.node FakeProgress |> UI.setLimits { yMax = Just 200, yMin = 200, xMax = Just 200, xMin = 200 })
     , layout = UI.node Error
+    , render = WebTiled.Render.empty
     , build = { selected = { build = "", run = "", name = "" }, rest = [] }
     , remoteStorage = { status = Connecting, userName = "", files = [] }
     , version = version
@@ -68,14 +73,14 @@ type alias RunTemplate =
 
 type LevelFrom
     = UrlLevel String String
-    | DiskLevel Images
-    | RemoteStorageLevel Images
+    | DiskLevel
+    | RemoteStorageLevel
 
 
 type CurrentLevel
-    = LevelComplete LevelFrom Tiled.Level.Level (Dict Int Tiled.Tileset.Tileset)
-    | LevelPartial LevelFrom Tiled.Level.Level (Dict String Tiled.Tileset.Tileset) (List String)
-    | LevelLoading LevelFrom Tiled.Level.Level (Dict String Tiled.Tileset.Tileset) Images FilesInProgress
+    = LevelComplete Tiled.Level.Level Images Tilesets
+    | LevelPartial LevelFrom Tiled.Level.Level Images Tilesets FilesInProgress
+    | LevelLoading LevelFrom Tiled.Level.Level Images Tilesets FilesInProgress
     | LevelNone
 
 
@@ -83,8 +88,12 @@ type alias FilesInProgress =
     Set String
 
 
+type alias Tilesets =
+    Dict String Tiled.Tileset.Tileset
+
+
 type alias Images =
-    Dict String String
+    Dict String ( String, WebGL.Texture )
 
 
 type PropertiesFor
@@ -106,6 +115,7 @@ type Kind
     | Layers
     | Tilesets
     | Preview
+    | Preview2
     | FileManager
     | TopMenu
     | Preferences

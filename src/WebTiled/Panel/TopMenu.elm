@@ -103,8 +103,8 @@ view =
         [ MenuItem True
             Nothing
             "Examples"
-            [ MenuItem True (Just (GetFileFromUrl "https://raw.githubusercontent.com/z0lv/-age-platformer-puzzle/tiled/demo.json")) "Platformer" []
-            , MenuItem True (Just (GetFileFromUrl "https://raw.githubusercontent.com/z0lv/-age-top-down-adventure/tiled/demo.json")) "RPG" []
+            [ MenuItem True (Just (LoadFileFromUrl "https://raw.githubusercontent.com/z0lv/-age-platformer-puzzle/tiled/demo.json")) "Platformer" []
+            , MenuItem True (Just (LoadFileFromUrl "https://raw.githubusercontent.com/z0lv/-age-top-down-adventure/tiled/demo.json")) "RPG" []
             ]
         , MenuItem False Nothing "Tutorial" []
         ]

@@ -3,6 +3,7 @@ module WebTiled.Panel exposing
     , layers
     , preferences
     , preview
+    , preview2
     , properties
     , render
     , statusbar
@@ -42,12 +43,18 @@ import WebTiled.Panel.Toolbar.TileLayer
 import WebTiled.Panel.Toolbar.Tools
 import WebTiled.Panel.TopMenu
 import WebTiled.RenameMe
+import WebTiled.Render
 import WebTiled.Util.Tiled as TiledUtil
 
 
 preview : UI.Layout Kind
 preview =
     UI.node Preview |> UI.setLimits { yMax = Nothing, yMin = 10, xMax = Nothing, xMin = 10 }
+
+
+preview2 : UI.Layout Kind
+preview2 =
+    UI.node Preview2 |> UI.setLimits { yMax = Nothing, yMin = 10, xMax = Nothing, xMin = 10 }
 
 
 fileManager : UI.Layout Kind
@@ -117,11 +124,15 @@ render model w h x y kind =
             [ WebTiled.Panel.TopMenu.view ]
                 |> wrapper x y w h
 
-        ( Preview, LevelComplete _ level _ ) ->
+        ( Preview, LevelComplete level _ _ ) ->
             [ WebTiled.Panel.Preview.view (TiledUtil.getLevelData level) ]
                 |> wrapper x y w h
 
-        ( Layers, LevelComplete _ level _ ) ->
+        ( Preview2, LevelComplete _ _ _ ) ->
+            [ Html.Lazy.lazy WebTiled.Render.view model.render ]
+                |> wrapper x y w h
+
+        ( Layers, LevelComplete level _ _ ) ->
             WebTiled.Panel.Layers.view model.selectedLayers (TiledUtil.getLevelData level).layers
                 |> WebTiled.Panel.Generic.panel x y w h "Layers"
 
@@ -173,21 +184,7 @@ render model w h x y kind =
 
         ( Tilesets, _ ) ->
             case model.level of
-                LevelComplete (UrlLevel url _) level external ->
-                    [ Html.Lazy.lazy3 WebTiled.Panel.Tilesets.imagesFromUrl url (TiledUtil.getLevelData level).tilesets external
-                    , Html.Lazy.lazy3 WebTiled.Panel.Tilesets.view model.selectedTileset (TiledUtil.getLevelData level).tilesets external
-                        |> WebTiled.Panel.Generic.panel x y w h "Tilesets"
-                    ]
-                        |> div []
-
-                LevelComplete (DiskLevel images) level external ->
-                    [ Html.Lazy.lazy2 WebTiled.Panel.Tilesets.imagesDataUrl images (TiledUtil.getLevelData level).tilesets
-                    , Html.Lazy.lazy3 WebTiled.Panel.Tilesets.view model.selectedTileset (TiledUtil.getLevelData level).tilesets external
-                        |> WebTiled.Panel.Generic.panel x y w h "Tilesets"
-                    ]
-                        |> div []
-
-                LevelComplete (RemoteStorageLevel images) level external ->
+                LevelComplete level images external ->
                     [ Html.Lazy.lazy2 WebTiled.Panel.Tilesets.imagesDataUrl images (TiledUtil.getLevelData level).tilesets
                     , Html.Lazy.lazy3 WebTiled.Panel.Tilesets.view model.selectedTileset (TiledUtil.getLevelData level).tilesets external
                         |> WebTiled.Panel.Generic.panel x y w h "Tilesets"
@@ -197,18 +194,18 @@ render model w h x y kind =
                 LevelLoading _ _ _ _ _ ->
                     div [] [ text "Loading... " ] |> WebTiled.Panel.Generic.panel x y w h "Tilesets"
 
-                LevelPartial _ _ _ _ ->
+                LevelPartial _ _ _ _ _ ->
                     div [] [ text "Missing files" ] |> WebTiled.Panel.Generic.panel x y w h "Tilesets"
 
                 LevelNone ->
                     div [] [ text "No Level" ] |> WebTiled.Panel.Generic.panel x y w h "Tilesets"
 
-        ( Properties, LevelComplete _ level external ) ->
+        ( Properties, LevelComplete level _ external ) ->
             case model.propertiesFocus of
                 TilesetProps i ->
                     case (TiledUtil.getLevelData level).tilesets |> List.getAt i of
                         Just (Tileset.Source { source, firstgid }) ->
-                            case Dict.get firstgid external of
+                            case Dict.get source external of
                                 Just (Tileset.Embedded info) ->
                                     WebTiled.Panel.Properties.Tileset.view info
                                         |> WebTiled.Panel.Properties.Generic.properties "Tileset" info.properties x y w h

@@ -3,7 +3,7 @@ module Main exposing (main)
 import Browser
 import Browser.Dom as Browser
 import Browser.Events
-import Dict
+import Dict exposing (Dict)
 import File
 import File.Select
 import Html exposing (Html)
@@ -19,10 +19,13 @@ import RemoteStorage as RS
 import Set
 import Task
 import Tiled
+import Tiled.Level
 import Tiled.Tileset
+import WebGL.Texture as Texture exposing (Texture)
 import WebTiled.Message exposing (Message(..))
-import WebTiled.Model as Model exposing (CurrentLevel(..), LevelFrom(..), Model, PropertiesFor(..))
+import WebTiled.Model as Model exposing (CurrentLevel(..), Images, LevelFrom(..), Model, PropertiesFor(..))
 import WebTiled.Panel as Panel2 exposing (preferences)
+import WebTiled.Render exposing (textureError, textureOption)
 import WebTiled.Util.File as File
 import WebTiled.Util.Http as Http
 import WebTiled.Util.Tiled as TiledUtil
@@ -75,72 +78,132 @@ update msg model =
 
         --- File
         Open ->
-            ( model, File.Select.files [] (\a -> (::) a >> GetFiles) )
+            ( model, File.Select.files [] (\a -> (::) a >> ParseFiles) )
 
-        GetFileFromUrl url ->
+        LoadFileFromUrl url ->
             ( model, Http.getLevel url )
 
-        GetFiles files ->
+        ParseFiles files ->
             ( model, File.getLevel files )
 
-        GetFileRemoteStorage file ->
+        LoadFileRemoteStorage file ->
             ( model, RS.getFile file )
 
-        FileFromUrl ( relUrl, filename ) level tilesets ->
-            ( { model | level = LevelComplete (UrlLevel relUrl filename) level (Dict.fromList tilesets) }, Cmd.none )
-
-        FilesFromDisk levels tilesets images ->
-            case levels |> Dict.values |> List.head of
-                Just level ->
-                    case TiledUtil.validate level tilesets images of
-                        Ok _ ->
-                            ( { model | level = LevelComplete (DiskLevel images) level Dict.empty }, Cmd.none )
-
-                        Err err ->
-                            --let
-                            --    _ =
-                            --        Debug.log "FilesFromDisk-ERROR" err
-                            --in
-                            ( model, Cmd.none )
-
-                Nothing ->
-                    --let
-                    --    _ =
-                    --        Debug.log "FilesFromDisk-ERROR" "NO LEVEL"
-                    --in
-                    ( model, Cmd.none )
-
-        SaveFromUrl result ->
-            case ( result, model.level ) of
-                ( Ok images, LevelComplete (UrlLevel _ filename) level tilesets ) ->
+        ---Save
+        Save ->
+            case model.level of
+                LevelComplete level images tilesets ->
+                    let
+                        filename =
+                            "hello.json"
+                    in
                     level
                         |> TiledUtil.sourceTileset
                         |> List.foldl
                             (\{ source, firstgid } acc ->
-                                Dict.get firstgid tilesets
+                                Dict.get source tilesets
                                     |> Maybe.map (\a -> ( source, E.encode 0 (Tiled.Tileset.encode a) ) :: acc)
                                     |> Maybe.withDefault acc
                             )
                             []
-                        |> RS.saveLevel ( filename, level ) images
+                        |> RS.saveLevel filename level (Dict.foldl (\k ( a, b ) -> (::) ( k, a )) [] images)
                         |> Tuple.pair model
 
                 _ ->
                     ( model, Cmd.none )
 
-        Save ->
+        --Load
+        GotImage name url t ->
             case model.level of
-                LevelComplete (UrlLevel url _) level _ ->
-                    ( model
-                    , level
-                        |> TiledUtil.images
-                        |> Set.foldl (\name -> Http.getBytes (url ++ name) |> Task.map (Tuple.pair name) |> (::)) []
-                        |> Task.sequence
-                        |> Task.attempt SaveFromUrl
-                    )
-
-                _ ->
+                LevelComplete level images tilesets ->
                     ( model, Cmd.none )
+
+                LevelPartial form level images tilesets inProgress ->
+                    ( model, Cmd.none )
+
+                LevelLoading levelForm level images tilesets _ ->
+                    let
+                        newImages =
+                            Dict.insert name ( url, t ) images
+                    in
+                    case TiledUtil.validate level tilesets newImages of
+                        Ok _ ->
+                            let
+                                render =
+                                    WebTiled.Render.initLevel (toRender newImages) (TiledUtil.mergeTileset tilesets level) model.render
+                            in
+                            ( { model
+                                | level = LevelComplete level newImages tilesets
+                                , render = render
+                              }
+                            , Cmd.none
+                            )
+
+                        Err inProgress ->
+                            ( { model
+                                | level = LevelLoading levelForm level newImages tilesets (Set.remove name inProgress)
+                              }
+                            , Cmd.none
+                            )
+
+                LevelNone ->
+                    ( model, Cmd.none )
+
+        FileFromUrl ( relUrl, filename ) level tilesets ->
+            let
+                images =
+                    TiledUtil.images level
+            in
+            ( { model
+                | level = LevelLoading (UrlLevel relUrl filename) level Dict.empty tilesets images
+              }
+            , getImages relUrl level
+            )
+
+        FilesFromDisk level tilesets images ->
+            if Dict.isEmpty images then
+                case TiledUtil.validate level tilesets Dict.empty of
+                    Ok _ ->
+                        ( { model | level = LevelComplete level Dict.empty tilesets }
+                        , Cmd.none
+                        )
+
+                    Err missing ->
+                        ( { model | level = LevelPartial DiskLevel level Dict.empty tilesets missing }
+                        , Cmd.none
+                        )
+
+            else
+                let
+                    needImages =
+                        TiledUtil.images level
+
+                    haveImages =
+                        Set.fromList (Dict.keys images)
+
+                    missing =
+                        Set.diff needImages haveImages
+                in
+                ( { model
+                    | level =
+                        if Set.isEmpty missing then
+                            LevelLoading DiskLevel level Dict.empty tilesets needImages
+
+                        else
+                            LevelPartial DiskLevel level Dict.empty tilesets missing
+                  }
+                , Cmd.batch <|
+                    Dict.foldl
+                        (\a b acc ->
+                            if Set.member a needImages then
+                                getImage a b :: acc
+
+                            else
+                                acc
+                        )
+                        []
+                        images
+                )
 
         FileError err ->
             --let
@@ -149,7 +212,7 @@ update msg model =
             --in
             ( model, Cmd.none )
 
-        FileMissing name ->
+        RemoteStorageFileMissing name ->
             --let
             --    _ =
             --        Debug.log "CANNOT LOAD!::file" name
@@ -157,32 +220,27 @@ update msg model =
             ( model, Cmd.none )
 
         --Remote Storage
-        RemoteStorageFile name contentType data ->
+        RemoteStorageFile name contentType dataUrl ->
             case contentType of
                 "application/tiled.level-json" ->
-                    case D.decodeString Tiled.decode data of
+                    case D.decodeString Tiled.decode dataUrl of
                         Ok level ->
                             case TiledUtil.validate level Dict.empty Dict.empty of
                                 Ok _ ->
+                                    let
+                                        render =
+                                            WebTiled.Render.initLevel Dict.empty level model.render
+                                    in
                                     ( { model
-                                        | level =
-                                            LevelComplete
-                                                (RemoteStorageLevel Dict.empty)
-                                                level
-                                                Dict.empty
+                                        | level = LevelComplete level Dict.empty Dict.empty
+                                        , render = render
                                       }
                                     , Cmd.none
                                     )
 
                                 Err missingFiles ->
                                     ( { model
-                                        | level =
-                                            LevelLoading
-                                                (RemoteStorageLevel Dict.empty)
-                                                level
-                                                Dict.empty
-                                                Dict.empty
-                                                missingFiles
+                                        | level = LevelLoading RemoteStorageLevel level Dict.empty Dict.empty missingFiles
                                       }
                                     , Set.foldl (RS.getFile >> (::)) [] missingFiles |> Cmd.batch
                                     )
@@ -191,37 +249,11 @@ update msg model =
                             ( model, Cmd.none )
 
                 "image/base64" ->
-                    case model.level of
-                        LevelLoading levelForm level tilesets images _ ->
-                            let
-                                newImages =
-                                    Dict.insert name data images
-                            in
-                            case TiledUtil.validate level tilesets newImages of
-                                Ok _ ->
-                                    ( { model
-                                        | level =
-                                            LevelComplete
-                                                (RemoteStorageLevel newImages)
-                                                level
-                                                Dict.empty
-                                      }
-                                    , Cmd.none
-                                    )
-
-                                Err inProgress ->
-                                    ( { model
-                                        | level = LevelLoading levelForm level tilesets newImages (Set.remove name inProgress)
-                                      }
-                                    , Cmd.none
-                                    )
-
-                        _ ->
-                            ( model, Cmd.none )
+                    ( model, getImage name dataUrl )
 
                 "application/tiled.tileset-json" ->
                     case model.level of
-                        LevelLoading levelForm level tilesets images _ ->
+                        LevelLoading levelForm level images tilesets _ ->
                             let
                                 newTilesets =
                                     level
@@ -229,7 +261,7 @@ update msg model =
                                         |> List.find (.source >> (==) name)
                                         |> Maybe.andThen
                                             (\{ firstgid, source } ->
-                                                D.decodeString (Tiled.Tileset.decodeFile firstgid) data
+                                                D.decodeString (Tiled.Tileset.decodeFile firstgid) dataUrl
                                                     |> Result.toMaybe
                                                     |> Maybe.map (\t -> Dict.insert source t tilesets)
                                             )
@@ -237,24 +269,24 @@ update msg model =
                             in
                             case TiledUtil.validate level newTilesets images of
                                 Ok _ ->
+                                    let
+                                        render =
+                                            WebTiled.Render.initLevel (toRender images) level model.render
+                                    in
                                     ( { model
-                                        | level =
-                                            LevelComplete
-                                                (RemoteStorageLevel images)
-                                                level
-                                                (Dict.foldl (\_ v -> Dict.insert (TiledUtil.firstGid v) v) Dict.empty newTilesets)
+                                        | level = LevelComplete level images newTilesets
+                                        , render = render
                                       }
                                     , Cmd.none
                                     )
 
                                 Err inProgress ->
                                     ( { model
-                                        | level = LevelLoading levelForm level newTilesets images (Set.remove name inProgress)
+                                        | level = LevelLoading levelForm level images newTilesets (Set.remove name inProgress)
                                       }
                                     , Cmd.none
                                     )
 
-                        --
                         _ ->
                             ( model, Cmd.none )
 
@@ -331,7 +363,7 @@ update msg model =
         ---Scripts
         Run ->
             case model.level of
-                LevelComplete _ level _ ->
+                LevelComplete level _ _ ->
                     ( model, Port.BuildRun.levelBuild model.build.selected level )
 
                 _ ->
@@ -367,10 +399,6 @@ update msg model =
 init : D.Value -> ( Model, Cmd Message )
 init flags =
     let
-        url =
-            D.decodeValue (D.field "levelUrl" D.string) flags
-                |> Result.withDefault "top-down-adventure/demo.json"
-
         runScripts =
             { selected =
                 { build = "https://justgook.github.io/new-age/JumpGun/build.js"
@@ -398,17 +426,23 @@ init flags =
             UI.fromList ( Panel2.properties, [ Panel2.fileManager ] )
 
         center =
-            Panel2.preview
+            Panel2.preview2
 
         right =
-            UI.fromList ( Panel2.layers, [ Panel2.tilesets ] )
+            UI.fromList ( Panel2.layers, [{- Panel2.tilesets -}] )
 
         layout =
             UI.fromList ( Panel2.topMenu, [ Panel2.toolbar, UI.fromList ( left, [ center, right ] ), Panel2.statusbar ] )
 
         ( m, cmd ) =
             Model.init flags
-                |> update (WebTiled.Message.GetFileFromUrl url)
+                |> (case D.decodeValue (D.field "levelUrl" D.string) flags of
+                        Ok url ->
+                            update (WebTiled.Message.LoadFileFromUrl url)
+
+                        Err _ ->
+                            \m_ -> ( m_, Cmd.none )
+                   )
     in
     ( { m
         | layout = layout
@@ -445,7 +479,7 @@ contextmenu =
     D.list File.decoder
         |> D.field "files"
         |> D.field "dataTransfer"
-        |> D.map (\files -> { message = GetFiles files, stopPropagation = True, preventDefault = True })
+        |> D.map (\files -> { message = ParseFiles files, stopPropagation = True, preventDefault = True })
         |> Html.Events.custom "contextmenu"
 
 
@@ -454,5 +488,33 @@ onDrop =
     D.list File.decoder
         |> D.field "files"
         |> D.field "dataTransfer"
-        |> D.map (\files -> { message = GetFiles files, stopPropagation = True, preventDefault = True })
+        |> D.map (\files -> { message = ParseFiles files, stopPropagation = True, preventDefault = True })
         |> Html.Events.custom "drop"
+
+
+getImages : String -> Tiled.Level.Level -> Cmd Message
+getImages relUrl level =
+    TiledUtil.images level
+        |> Set.foldl (\name -> getImage name (relUrl ++ name) |> (::)) []
+        |> Cmd.batch
+
+
+getImage : String -> String -> Cmd Message
+getImage name url =
+    Task.map2 (GotImage name)
+        (Http.getBytes url)
+        (Texture.loadWith textureOption url |> Task.mapError textureError)
+        |> Task.attempt
+            (\r ->
+                case r of
+                    Ok msg ->
+                        msg
+
+                    Err err ->
+                        FileError err
+            )
+
+
+toRender : Images -> Dict String Texture
+toRender =
+    Dict.map (\k ( _, t ) -> t)

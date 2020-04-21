@@ -9,7 +9,7 @@ import TypedSvg exposing (..)
 import TypedSvg.Attributes exposing (d, noFill, patternUnits, stroke, strokeDasharray, viewBox, xlinkHref)
 import TypedSvg.Attributes.InPx exposing (..)
 import TypedSvg.Core exposing (Svg, attribute)
-import TypedSvg.Types exposing (CoordinateSystem(..), percent)
+import TypedSvg.Types exposing (CoordinateSystem(..), Paint(..), percent)
 
 
 view : List Layer.Layer -> Float -> Float -> Float -> Float -> Svg msg
@@ -106,7 +106,7 @@ grid_ group cellW cellH =
             [ TypedSvg.Attributes.width <| percent 100
             , TypedSvg.Attributes.height <| percent 100
             , attribute "fill" "url(#grid)"
-            , stroke Color.black
+            , stroke (Paint Color.black)
             , strokeWidth 2
             ]
             []
@@ -125,7 +125,7 @@ gridDefs group cellW cellH =
             [ path
                 [ d ("M " ++ String.fromFloat cellW ++ " 0 L 0 0 0 " ++ String.fromFloat cellW)
                 , noFill
-                , stroke (Color.rgba 0.82 0.84 0.81 0.3)
+                , stroke (Paint (Color.rgba 0.82 0.84 0.81 0.3))
                 , strokeWidth 1
                 , strokeDasharray "2 1"
                 ]
@@ -146,7 +146,7 @@ gridDefs group cellW cellH =
             , path
                 [ d ("M " ++ String.fromFloat (group * cellW) ++ " 0 L 0 0 0 " ++ String.fromFloat (group * cellH))
                 , noFill
-                , stroke (Color.rgba 0.82 0.84 0.81 0.3)
+                , stroke (Paint (Color.rgba 0.82 0.84 0.81 0.3))
                 , strokeWidth 2
                 ]
                 []
