@@ -1,5 +1,5 @@
 {
-  "version": "1.4.0",
+  "version": "1.6.0",
   "name": "WebTiled Editor",
   "description": "WebTiled is a general purpose tile map editor for all tile-based games, such as RPGs, platformers or Breakout clones.",
   "icons": {
