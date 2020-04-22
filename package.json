@@ -27,7 +27,7 @@
     "posthtml-head-elements": "0.5.1",
     "posthtml-style-to-file": "0.2.0",
     "prepack": "0.2.54",
-    "puppeteer": "3.0.0",
+    "puppeteer": "2.1.1",
     "uglify-js": "3.9.1"
   }
 }
