@@ -50,10 +50,7 @@ async function screenshot() {
     console.log("starting puppeteer");
     let browser = null;
     try {
-        browser = await puppeteer.launch({
-            headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox'],
-        });
+        browser = await puppeteer.launch();
     } catch (e) {
         console.log(`Can not launch puppeteer: ${e}`);
         process.exit(-1);
