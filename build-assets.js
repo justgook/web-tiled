@@ -45,9 +45,7 @@ server.listen(port, () => {
 async function screenshot() {
     console.log("init puppeteer");
     const puppeteer = require('puppeteer');
-
-    // 1. Launch the browser
-    console.log("starting puppeteer");
+    console.log("1. Launch the browser");
     let browser = null;
     try {
         browser = await puppeteer.launch();
@@ -55,8 +53,7 @@ async function screenshot() {
         console.log(`Can not launch puppeteer: ${e}`);
         process.exit(-1);
     }
-    // 2. Open a new page
-    console.log("newPage");
+    console.log("2. Open a new page");
     const page = await browser.newPage();
     await stepStepSTEP(page);
     await browser.close();
@@ -65,19 +62,13 @@ async function screenshot() {
 
 async function stepStepSTEP(page) {
     const url = `http://localhost:${port}/`;
-    console.log(`Screenshot capture`);
-    // 3. Navigate to URL
+    console.log(`3. Navigate to URL`);
     await page.goto(`${url}index.html`);
-    await page.addStyleTag({content: `body::after{content: "Version: ${packageJson.version} (${revision})"; position:absolute; bottom: 5px; left:10px}`})
-
-
+    console.log(`3.1 Add style`);
+    await page.addStyleTag({content: `body::after{content: "Version: ${packageJson.version} (${revision})"; position:absolute; bottom: 5px; left:10px}`});
+    console.log(`3.2 Wait for page renders (4s)`);
     await page.waitFor(4000);
-
-    // 4. Take screenshot
-    await page.screenshot({ omitBackground: true, path: `${__dirname}/gh-pages/preview.png` });
-
-    if (input.length) {
-        await stepStepSTEP(page, input);
-    }
+    console.log("4. Take screenshot");
+    return await page.screenshot({ omitBackground: true, path: `${__dirname}/gh-pages/preview.png` });
 
 }
