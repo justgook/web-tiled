@@ -47,8 +47,17 @@ async function screenshot() {
     const puppeteer = require('puppeteer');
 
     // 1. Launch the browser
-    console.log("start puppeteer");
-    const browser = await puppeteer.launch();
+    console.log("starting puppeteer");
+    let browser = null;
+    try {
+        browser = await puppeteer.launch({
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        });
+    } catch (e) {
+        console.log(`Can not launch puppeteer: ${e}`);
+        process.exit(-1);
+    }
     // 2. Open a new page
     console.log("newPage");
     const page = await browser.newPage();
