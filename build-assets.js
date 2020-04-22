@@ -35,22 +35,22 @@ const server = http.createServer((req, res) => {
 
 server.listen(port, () => {
     console.log("server started");
-    screenshot(() => server.close());
+    screenshot()
+        .catch(() => process.exit(-1))
+        .then(() => server.close());
 });
 
 
-function screenshot(done) {
-    stepScreenshot()
-        .catch(() => process.exit(-1))
-        .then(done);
-}
 
-async function stepScreenshot() {
+async function screenshot() {
+    console.log("init puppeteer");
     const puppeteer = require('puppeteer');
 
     // 1. Launch the browser
+    console.log("start puppeteer");
     const browser = await puppeteer.launch();
     // 2. Open a new page
+    console.log("newPage");
     const page = await browser.newPage();
     await stepStepSTEP(page);
     await browser.close();
